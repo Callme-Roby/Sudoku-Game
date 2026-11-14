@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/game/api';
-import { formatTime, NAME_KEY, playerId, readJSON, writeJSON } from '@/lib/game/local';
+import { getName, saveName } from '@/lib/game/identity';
+import { formatTime, playerId } from '@/lib/game/local';
 import type { Board, BoardLine } from '@/lib/server/scores';
 import type { Level } from '@/lib/sudoku/bank';
 import { gridToString } from '@/lib/sudoku/geometry';
@@ -43,12 +45,12 @@ export function Leaderboard({
       if (sent.current || !run) return;
       sent.current = true;
       setPhase('sending');
-      writeJSON(NAME_KEY, who.trim() || null);
+      const name = saveName(who) ?? who;
       try {
         setBoard(
           await api<Board>('/api/scores', {
             method: 'POST',
-            body: { run, player: playerId(), name: who, values: gridToString(values), time: Math.round(time) },
+            body: { run, player: playerId(), name, values: gridToString(values), time: Math.round(time) },
           }),
         );
         setPhase('done');
@@ -61,7 +63,7 @@ export function Leaderboard({
   );
 
   useEffect(() => {
-    const saved = readJSON<string>(NAME_KEY);
+    const saved = getName();
     if (run && saved) {
       setName(saved);
       submit(saved);
@@ -97,27 +99,34 @@ export function Leaderboard({
           </button>
         </form>
       )}
-      {board && (
-        <ol className="players">
-          {board.top.map((l) => (
-            <Line key={l.rank} line={l} />
-          ))}
-          {board.mine && (
-            <>
-              <li className="muted empty" aria-hidden>
-                <span>…</span>
-              </li>
-              <Line line={board.mine} />
-            </>
-          )}
-          {board.top.length === 0 && (
-            <li className="muted empty">
-              <span>aucun temps pour l’instant</span>
-            </li>
-          )}
-        </ol>
-      )}
+      {board && <BoardList board={board} />}
+      <Link href={`/classement?niveau=${level}`} className="item muted">
+        tout le classement
+      </Link>
     </div>
+  );
+}
+
+export function BoardList({ board }: { board: Board }) {
+  return (
+    <ol className="players">
+      {board.top.map((l) => (
+        <Line key={l.rank} line={l} />
+      ))}
+      {board.mine && (
+        <>
+          <li className="muted empty" aria-hidden>
+            <span>…</span>
+          </li>
+          <Line line={board.mine} />
+        </>
+      )}
+      {board.top.length === 0 && (
+        <li className="muted empty">
+          <span>aucun temps pour l’instant</span>
+        </li>
+      )}
+    </ol>
   );
 }
 

@@ -11,14 +11,15 @@
  * and hash `sudoku:lb:{level}:n` (player id → display name).
  */
 import { randomUUID } from 'node:crypto';
-import { geometryFor, isLevel, makePuzzle, type Level } from '../sudoku/bank.ts';
+import { geometryFor, isLevel, LEVELS, makePuzzle, type Level } from '../sudoku/bank.ts';
 import { isCompleteAndValid } from '../sudoku/solver.ts';
 import { cleanName, HttpError } from './rooms.ts';
 import { store } from './store.ts';
 
 const RUN_TTL_S = 7 * 24 * 3600;
 const KEEP = 1000; // lines kept per level
-const TOP = 5;
+const TOP = 5; // default size of the top
+const TOP_MAX = 20;
 const SLACK_MS = 3000;
 /** nobody fills a cell in less than this on average */
 const MIN_MS_PER_CELL = 500;
@@ -53,11 +54,12 @@ export async function startRun(level: unknown, seed: unknown) {
   return { run };
 }
 
-export async function getBoard(level: unknown, player: unknown): Promise<Board> {
+export async function getBoard(level: unknown, player: unknown, size: unknown = TOP): Promise<Board> {
   if (!isLevel(level)) throw new HttpError(404, 'niveau inconnu');
   const me = isPlayerId(player) ? player : null;
+  const n = Math.min(TOP_MAX, Math.max(1, Math.floor(Number(size)) || TOP));
   const [rawTop, total, rank, score] = await store().exec([
-    ['ZRANGE', boardKey(level), 0, TOP - 1, 'WITHSCORES'],
+    ['ZRANGE', boardKey(level), 0, n - 1, 'WITHSCORES'],
     ['ZCARD', boardKey(level)],
     ['ZRANK', boardKey(level), me ?? '-'],
     ['ZSCORE', boardKey(level), me ?? '-'],
@@ -66,7 +68,8 @@ export async function getBoard(level: unknown, player: unknown): Promise<Board> 
   const flat = Array.isArray(rawTop) ? rawTop.map(String) : [];
   const top: { id: string; time: number }[] = [];
   for (let i = 0; i + 1 < flat.length; i += 2) top.push({ id: flat[i], time: Number(flat[i + 1]) });
-  const ids = [...top.map((l) => l.id), ...(me && rank !== null && Number(rank) >= TOP ? [me] : [])];
+  const outside = me !== null && rank !== null && Number(rank) >= n;
+  const ids = [...top.map((l) => l.id), ...(outside ? [me] : [])];
   const [names] = ids.length ? await store().exec([['HMGET', namesKey(level), ...ids]]) : [[]];
   const nameOf = (i: number) => {
     const raw = (names as (string | null)[])[i];
@@ -80,7 +83,7 @@ export async function getBoard(level: unknown, player: unknown): Promise<Board> 
     level,
     top: top.map((l, i) => ({ rank: i + 1, name: nameOf(i), time: l.time, me: l.id === me })),
     mine:
-      me && rank !== null && Number(rank) >= TOP && score !== null
+      outside && score !== null
         ? { rank: Number(rank) + 1, name: nameOf(top.length), time: Number(score), me: true }
         : null,
     total: Number(total),
@@ -118,4 +121,20 @@ export async function submitRun(body: unknown): Promise<Board> {
     ['DEL', runKey(run)], // one submission per grid
   ]);
   return getBoard(level, player);
+}
+
+/** New first name: shown on every board where this player already has a time. */
+export async function renamePlayer(body: unknown) {
+  const { player, name } = (body ?? {}) as Record<string, unknown>;
+  if (!isPlayerId(player)) throw new HttpError(400, 'paramètres invalides');
+  const clean = cleanName(name);
+  const scores = await store().exec(LEVELS.map((level) => ['ZSCORE', boardKey(level), player]));
+  const cmds = LEVELS.filter((_, i) => scores[i] !== null).map((level) => [
+    'HSET',
+    namesKey(level),
+    player,
+    JSON.stringify({ name: clean, at: Date.now() }),
+  ]);
+  if (cmds.length) await store().exec(cmds);
+  return { name: clean, boards: cmds.length };
 }

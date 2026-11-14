@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/game/api';
-import { NAME_KEY, readJSON, roomKey, writeJSON, type RoomCreds } from '@/lib/game/local';
+import { getName, saveName } from '@/lib/game/identity';
+import { roomKey, writeJSON, type RoomCreds } from '@/lib/game/local';
 import { ICONS } from '@/lib/pixel/glyphs';
 import { LEVEL_LABEL, LEVELS, type Level } from '@/lib/sudoku/bank';
 import type { Mode } from '@/lib/server/rooms';
@@ -22,16 +23,16 @@ export function CreateRoom({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState<Level | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setName((n) => n || (readJSON<string>(NAME_KEY) ?? '')), []);
+  useEffect(() => setName((n) => n || (getName() ?? '')), []);
 
   const create = async (level: Level) => {
     setBusy(level);
     setError(null);
-    writeJSON(NAME_KEY, name.trim() || null);
+    const who = saveName(name) ?? '';
     try {
       const r = await api<RoomCreds & { code: string }>('/api/rooms', {
         method: 'POST',
-        body: { mode, level, name },
+        body: { mode, level, name: who },
       });
       writeJSON(roomKey(r.code), { id: r.id, token: r.token } satisfies RoomCreds);
       router.push(`/r/${r.code}`);

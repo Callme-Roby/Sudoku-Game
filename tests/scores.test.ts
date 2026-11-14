@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { makePuzzle } from '../lib/sudoku/bank.ts';
 import { gridToString } from '../lib/sudoku/geometry.ts';
-import { getBoard, startRun, submitRun } from '../lib/server/scores.ts';
+import { getBoard, renamePlayer, startRun, submitRun } from '../lib/server/scores.ts';
 
 const solved = (seed: number) => gridToString(makePuzzle('mini', seed).solution);
 
@@ -51,5 +51,21 @@ describe('leaderboard', () => {
     await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 120_000 })).rejects.toThrow('temps');
     await submitRun({ run, player: 'player-cheat', name: 'x', values, time: 50_000 });
     await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 50_000 })).rejects.toThrow('inconnue');
+  });
+});
+
+describe('leaderboard names and sizes', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('renames a player on the boards where they appear, and sizes the top', async () => {
+    vi.useFakeTimers();
+    await play('player-rename', 'Mia', 30, 41);
+    await play('player-other1', 'Zoé', 31, 42);
+    const r = await renamePlayer({ player: 'player-rename', name: '  Mia   B ' });
+    expect(r).toEqual({ name: 'Mia B', boards: 1 });
+    const board = await getBoard('mini', 'player-rename', 20);
+    expect(board.top.find((l) => l.me)?.name).toBe('Mia B');
+    expect((await getBoard('mini', null, 1)).top).toHaveLength(1);
+    expect((await getBoard('mini', null, 500)).top.length).toBeLessThanOrEqual(20);
   });
 });

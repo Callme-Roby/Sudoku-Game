@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from 'react';
 import { api, ApiError } from '@/lib/game/api';
-import { formatTime, NAME_KEY, readJSON, roomKey, writeJSON, type RoomCreds } from '@/lib/game/local';
+import { getName, saveName } from '@/lib/game/identity';
+import { formatTime, readJSON, roomKey, writeJSON, type RoomCreds } from '@/lib/game/local';
 import type { Action, Snapshot } from '@/lib/game/state';
 import { DIGITS, ICONS } from '@/lib/pixel/glyphs';
 import type { PublicPlayer, PublicRoom } from '@/lib/server/rooms';
@@ -101,15 +102,15 @@ function Join({ room, onJoined }: { room: PublicRoom; onJoined: (c: RoomCreds) =
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => setName((n) => n || (readJSON<string>(NAME_KEY) ?? '')), []);
+  useEffect(() => setName((n) => n || (getName() ?? '')), []);
   const host = room.players.find((p) => p.id === room.hostId);
   const full = room.players.filter((p) => p.active).length >= room.max;
 
   const join = async () => {
     setBusy(true);
-    writeJSON(NAME_KEY, name.trim() || null);
+    const who = saveName(name) ?? '';
     try {
-      onJoined(await api<RoomCreds>(`/api/rooms/${room.code}/join`, { method: 'POST', body: { name } }));
+      onJoined(await api<RoomCreds>(`/api/rooms/${room.code}/join`, { method: 'POST', body: { name: who } }));
     } catch (e) {
       setError((e as Error).message);
       setBusy(false);

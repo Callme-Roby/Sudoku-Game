@@ -9,8 +9,11 @@ et un trait de pixel art très fin.
 - Notes (crayon), annuler, effacer, conflits signalés par une trame, chiffres terminés estompés
 - Clavier : `1`–`9`, flèches, `⌫`, `N` (notes), `Ctrl/⌘ + Z`
 - Partie solo sauvegardée automatiquement (recharger la page reprend la grille), record par niveau
-- **Classement** par niveau : à la fin d'une grille solo, les 5 meilleurs temps avec les prénoms
-  (ta ligne soulignée, ta place si tu es plus loin). Le prénom est demandé une fois, puis retenu
+- **Prénom** demandé une seule fois, à la première visite ; gardé sur l'appareil, pré-rempli pour le jeu
+  en ligne, modifiable depuis la page classement (les lignes déjà au classement suivent)
+- **Classement** (solo) par niveau : chaque grille terminée y est enregistrée automatiquement ; à la fin,
+  les 5 meilleurs temps (ta ligne soulignée, ta place si tu es plus loin) ; page `/classement` depuis
+  l'accueil avec le top 10 de chaque niveau
 - Installable comme web app (manifest + icônes), thème sombre automatique
 
 ## Lancer en local
@@ -82,7 +85,7 @@ Chaque joueur n'écrit que son propre champ Redis, donc pas de conflit d'écritu
 ## Structure
 
 ```
-app/                  pages (accueil, /solo/[niveau], /defi, /royale, /r/[code]) et API /api/rooms
+app/                  pages (accueil, /solo/[niveau], /defi, /royale, /r/[code], /classement), API rooms + scores
 components/           grille, pavé, jeu solo, salle multijoueur, rendu pixel
 lib/sudoku/           géométrie, solveur, noteur, générateur, banque de grilles (puzzles.json)
 lib/game/             état du jeu (reducer), stockage local, client API
