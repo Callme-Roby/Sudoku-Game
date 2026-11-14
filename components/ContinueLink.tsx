@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { readJSON, SOLO_KEY, type SavedSolo } from '@/lib/game/local';
 import { isLevel, LEVEL_LABEL } from '@/lib/sudoku/bank';
+import { Scramble } from './Intro';
 
 export function ContinueLink() {
   const [saved, setSaved] = useState<SavedSolo | null>(null);
@@ -15,8 +16,12 @@ export function ContinueLink() {
   if (!saved) return null;
   return (
     <>
-      <Link href={`/solo/${saved.level}?g=${saved.seed.toString(36)}`} className="item">
-        continuer · {LEVEL_LABEL[saved.level]}
+      <Link
+        href={`/solo/${saved.level}?g=${saved.seed.toString(36)}`}
+        className="item intro-item"
+        style={{ animationDelay: '880ms' }}
+      >
+        <Scramble text={`continuer · ${LEVEL_LABEL[saved.level]}`} />
       </Link>
       <span className="sep" aria-hidden />
     </>

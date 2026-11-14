@@ -67,6 +67,10 @@ Chaque joueur n'écrit que son propre champ Redis, donc pas de conflit d'écritu
   net (`shape-rendering: crispEdges`) ; un « pixel » = `--u` (2 px CSS).
 - Texte : [DotGothic16](https://fonts.google.com/specimen/DotGothic16) (licence OFL), trait d'un pixel.
 - Icônes de l'app : `python3 scripts/make-icons.py`.
+- Animation d'entrée (au chargement, désactivée si « réduire les animations ») : le logo s'écrit pixel par
+  pixel en suivant le tracé de la plume (`lib/pixel/trace.ts`), les intitulés se décodent depuis des chiffres
+  aléatoires (`components/Intro.tsx`), puis le trait et le bandeau apparaissent ; en jeu, les chiffres de
+  départ arrivent en balayage diagonal.
 
 ## Structure
 

@@ -605,3 +605,69 @@ a {
     margin-block: auto;
   }
 }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- entrance animation ----------
+   Home, on page load only (components/Intro.tsx marks it done):
+     150–1210 ms  the logo writes itself, pixel by pixel along the pen path
+     950 ms →     labels decode from random digits, one after the other
+     1275 ms      the separator draws from the centre
+     1550 ms      the credit band rises in four steps
+   Game: the starting digits appear in a diagonal scan on every new grid.
+   Everything is stepped (no soft fades) to stay pixel. */
+
+@keyframes px-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes band-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-intro='done']) .intro-logo path {
+    animation: px-in 1ms linear both;
+    animation-delay: calc(150ms + var(--k) * 18ms);
+  }
+  :root:not([data-intro='done']) .intro-item {
+    animation: px-in 1ms linear both; /* delay set inline, per label */
+  }
+  :root:not([data-intro='done']) .intro-sep {
+    animation: draw-x 240ms steps(6) both;
+  }
+  :root:not([data-intro='done']) .intro-credit {
+    animation: band-in 280ms steps(4) both;
+    animation-delay: 1550ms;
+  }
+  .board .cell.given .px {
+    animation: px-in 1ms linear both;
+    animation-delay: calc(60ms + var(--d) * 22ms);
+  }
+}
