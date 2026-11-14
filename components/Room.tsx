@@ -11,9 +11,9 @@ import { geometryFor, LEVEL_LABEL, makePuzzle } from '@/lib/sudoku/bank';
 import { gridToString } from '@/lib/sudoku/geometry';
 import { Board } from './Board';
 import { MODE_LABEL } from './CreateRoom';
-import { Pad } from './Pad';
+import { ActionButton, Actions, DigitPad } from './Pad';
 import { Pixel } from './Pixel';
-import { useBoardSize, useKeyboard, useSudoku } from './useSudoku';
+import { GAME_CHROME, useBoardSize, useKeyboard, useSudoku } from './useSudoku';
 
 type Offset = MutableRefObject<number>;
 
@@ -101,7 +101,7 @@ function Join({ room, onJoined }: { room: PublicRoom; onJoined: (c: RoomCreds) =
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => setName(readJSON<string>(NAME_KEY) ?? ''), []);
+  useEffect(() => setName((n) => n || (readJSON<string>(NAME_KEY) ?? '')), []);
   const host = room.players.find((p) => p.id === room.hostId);
   const full = room.players.filter((p) => p.active).length >= room.max;
 
@@ -285,7 +285,7 @@ function Race({
   const others = room.players.filter((p) => p.id !== creds.id && (p.active || p.finishedMs !== null));
   const twoCols = others.length > 2;
   const racerRows = done ? 0 : twoCols ? Math.ceil(others.length / 2) : others.length;
-  const { cell, u } = useBoardSize(g.n, 260 + racerRows * 30);
+  const { cell, u } = useBoardSize(g.n, GAME_CHROME + racerRows * 30);
   const boardW = g.n * cell + g.n + 1;
 
   const send = useCallback(
@@ -337,24 +337,24 @@ function Race({
   };
 
   return (
-    <main className="screen" style={{ '--board-w': `${boardW}px` } as CSSProperties}>
+    <main className="screen game" style={{ '--board-w': `${boardW}px` } as CSSProperties}>
       <Header room={room} right={<span className="timer">{formatTime(elapsed)}</span>} />
-      {!done && others.length > 0 && (
-        <ul className="racers" style={{ '--cols': twoCols ? 2 : 1 } as CSSProperties} aria-label="adversaires">
-          {standings(others).map((p) => (
-            <li key={p.id} className="racer">
-              <span className="name">{p.name}</span>
-              <span className="muted">
-                {p.finishedMs !== null ? formatTime(p.finishedMs) : p.gaveUp ? 'abandon' : !p.active ? 'parti' : ''}
-              </span>
-              <span className="track">
-                <i style={{ width: `${Math.round((p.finishedMs !== null ? 1 : p.progress) * 100)}%` }} />
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="stage">
+      <section className="play">
+        {!done && others.length > 0 && (
+          <ul className="racers" style={{ '--cols': twoCols ? 2 : 1 } as CSSProperties} aria-label="adversaires">
+            {standings(others).map((p) => (
+              <li key={p.id} className="racer">
+                <span className="name">{p.name}</span>
+                <span className="muted">
+                  {p.finishedMs !== null ? formatTime(p.finishedMs) : p.gaveUp ? 'abandon' : !p.active ? 'parti' : ''}
+                </span>
+                <span className="track">
+                  <i style={{ width: `${Math.round((p.finishedMs !== null ? 1 : p.progress) * 100)}%` }} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="board-wrap">
           <Board g={g} state={state} dispatch={dispatch} cell={cell} u={u} />
           {!started && (
@@ -398,26 +398,33 @@ function Race({
                 </li>
               ))}
             </ol>
-            <div className="row">
-              {allDone && isHost ? (
-                <button type="button" className="item" onClick={rematch}>
-                  rejouer
-                </button>
-              ) : (
-                <span className="item muted">{allDone ? 'en attente de l’hôte…' : 'les autres jouent…'}</span>
-              )}
-              <Link href="/" className="item">
-                menu
-              </Link>
-            </div>
           </div>
         ) : (
-          <>
-            <Pad n={g.n} state={state} dispatch={dispatch} />
-            <GiveUp disabled={!started} onConfirm={() => send({ giveUp: true })} />
-          </>
+          <DigitPad n={g.n} state={state} dispatch={dispatch} />
         )}
-      </div>
+      </section>
+      <footer className="foot">
+        {done ? (
+          <div className="row">
+            {allDone && isHost ? (
+              <button type="button" className="item" onClick={rematch}>
+                rejouer
+              </button>
+            ) : (
+              <span className="item muted">{allDone ? 'en attente de l’hôte…' : 'les autres jouent…'}</span>
+            )}
+            <Link href="/" className="item">
+              menu
+            </Link>
+          </div>
+        ) : (
+          <Actions
+            state={state}
+            dispatch={dispatch}
+            extra={<GiveUp disabled={!started} onConfirm={() => send({ giveUp: true })} />}
+          />
+        )}
+      </footer>
     </main>
   );
 }
@@ -431,14 +438,12 @@ function GiveUp({ disabled, onConfirm }: { disabled: boolean; onConfirm: () => v
     return () => window.clearTimeout(t);
   }, [armed]);
   return (
-    <button
-      type="button"
-      className={armed ? 'item' : 'item muted'}
-      style={{ marginTop: 8 }}
+    <ActionButton
+      icon={ICONS.flag}
+      label={armed ? 'confirmer' : 'abandon'}
+      pressed={armed}
       disabled={disabled}
       onClick={() => (armed ? onConfirm() : setArmed(true))}
-    >
-      {armed ? 'confirmer l’abandon' : 'abandonner'}
-    </button>
+    />
   );
 }

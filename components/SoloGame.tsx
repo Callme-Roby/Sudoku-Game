@@ -7,9 +7,9 @@ import { ICONS } from '@/lib/pixel/glyphs';
 import { geometryFor, LEVEL_LABEL, makePuzzle, type Level } from '@/lib/sudoku/bank';
 import { randomSeed } from '@/lib/sudoku/rng';
 import { Board } from './Board';
-import { Pad } from './Pad';
+import { Actions, DigitPad } from './Pad';
 import { Pixel } from './Pixel';
-import { useBoardSize, useKeyboard, useSudoku } from './useSudoku';
+import { GAME_CHROME, useBoardSize, useKeyboard, useSudoku } from './useSudoku';
 
 /** The seed lives in the URL (?g=…): reloading resumes, sharing the link shares the grid. */
 export function SoloGame({ level }: { level: Level }) {
@@ -52,7 +52,7 @@ function Play({
   const g = geometryFor(level);
   const puzzle = useMemo(() => makePuzzle(level, seed), [level, seed]);
   const [state, dispatch] = useSudoku(g, puzzle.givens, saved);
-  const { cell, u } = useBoardSize(g.n);
+  const { cell, u } = useBoardSize(g.n, GAME_CHROME);
   const [elapsed, setElapsed] = useState(saved?.elapsed ?? 0);
   const [best, setBest] = useState<{ time: number | null; record: boolean }>({ time: null, record: false });
   const elapsedRef = useRef(elapsed);
@@ -111,8 +111,8 @@ function Play({
   const boardW = g.n * cell + g.n + 1;
 
   return (
-    <main className="screen" style={{ '--board-w': `${boardW}px` } as CSSProperties}>
-      <header className="bar" style={{ width: boardW, maxWidth: '100%' }}>
+    <main className="screen game" style={{ '--board-w': `${boardW}px` } as CSSProperties}>
+      <header className="bar">
         <Link href="/" className="icon-btn" aria-label="menu" style={{ justifySelf: 'start' }}>
           <Pixel rows={ICONS.back} />
         </Link>
@@ -121,27 +121,33 @@ function Play({
           {formatTime(elapsed)}
         </span>
       </header>
-      <div className="stage">
+      <section className="play">
         <Board g={g} state={state} dispatch={dispatch} cell={cell} u={u} />
         {state.won ? (
           <div className="done-panel" role="status">
             <div>résolu en {formatTime(elapsed)}</div>
             <div className="muted">
-              {best.record ? 'nouveau record' : best.time !== null ? `record ${formatTime(best.time)}` : ' '}
-            </div>
-            <div className="row">
-              <button type="button" className="item" onClick={onNew}>
-                nouvelle grille
-              </button>
-              <Link href="/" className="item">
-                menu
-              </Link>
+              {best.record ? 'nouveau record' : best.time !== null ? `record ${formatTime(best.time)}` : '\u00a0'}
             </div>
           </div>
         ) : (
-          <Pad n={g.n} state={state} dispatch={dispatch} />
+          <DigitPad n={g.n} state={state} dispatch={dispatch} />
         )}
-      </div>
+      </section>
+      <footer className="foot">
+        {state.won ? (
+          <div className="row">
+            <button type="button" className="item" onClick={onNew}>
+              nouvelle grille
+            </button>
+            <Link href="/" className="item">
+              menu
+            </Link>
+          </div>
+        ) : (
+          <Actions state={state} dispatch={dispatch} />
+        )}
+      </footer>
     </main>
   );
 }

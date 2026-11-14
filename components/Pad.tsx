@@ -1,58 +1,74 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { digitCounts, type Action, type GameState } from '@/lib/game/state';
-import { DIGITS, ICONS } from '@/lib/pixel/glyphs';
+import { DIGITS, ICONS, type Bitmap } from '@/lib/pixel/glyphs';
 import { Pixel } from './Pixel';
 
-export function Pad({ n, state, dispatch }: { n: number; state: GameState; dispatch: (a: Action) => void }) {
+type Dispatch = (a: Action) => void;
+
+/** Digits row — sits right under the grid. */
+export function DigitPad({ n, state, dispatch }: { n: number; state: GameState; dispatch: Dispatch }) {
   const counts = digitCounts(state.values, n);
   return (
-    <div className="pad">
-      <div className="digits" style={{ '--n': n } as CSSProperties}>
-        {Array.from({ length: n }, (_, k) => k + 1).map((d) => (
-          <button
-            key={d}
-            type="button"
-            className={counts[d] >= n ? 'digit done' : 'digit'}
-            aria-label={String(d)}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              dispatch({ type: 'input', digit: d });
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') dispatch({ type: 'input', digit: d });
-            }}
-          >
-            <Pixel rows={DIGITS[d]} />
-          </button>
-        ))}
-      </div>
-      <div className="actions">
-        <button type="button" className="action" onClick={() => dispatch({ type: 'undo' })}>
-          <span className="ico">
-            <Pixel rows={ICONS.undo} />
-          </span>
-          <span className="label">annuler</span>
-        </button>
-        <button type="button" className="action" onClick={() => dispatch({ type: 'erase' })}>
-          <span className="ico">
-            <Pixel rows={ICONS.erase} />
-          </span>
-          <span className="label">effacer</span>
-        </button>
+    <div className="digits" style={{ '--n': n } as CSSProperties}>
+      {Array.from({ length: n }, (_, k) => k + 1).map((d) => (
         <button
+          key={d}
           type="button"
-          className="action"
-          aria-pressed={state.notesMode}
-          onClick={() => dispatch({ type: 'toggleNotes' })}
+          className={counts[d] >= n ? 'digit done' : 'digit'}
+          aria-label={String(d)}
+          onPointerDown={(e) => {
+            e.preventDefault();
+            dispatch({ type: 'input', digit: d });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') dispatch({ type: 'input', digit: d });
+          }}
         >
-          <span className="ico">
-            <Pixel rows={ICONS.pencil} />
-          </span>
-          <span className="label">notes</span>
+          <Pixel rows={DIGITS[d]} />
         </button>
-      </div>
+      ))}
+    </div>
+  );
+}
+
+export function ActionButton({
+  icon,
+  label,
+  pressed,
+  disabled,
+  onClick,
+}: {
+  icon: Bitmap;
+  label: string;
+  pressed?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" className="action" aria-pressed={pressed} disabled={disabled} onClick={onClick}>
+      <span className="ico">
+        <Pixel rows={icon} />
+      </span>
+      <span className="label">{label}</span>
+    </button>
+  );
+}
+
+/** Undo / erase / notes — the footer block. */
+export function Actions({ state, dispatch, extra }: { state: GameState; dispatch: Dispatch; extra?: ReactNode }) {
+  return (
+    <div className="actions">
+      <ActionButton icon={ICONS.undo} label="annuler" onClick={() => dispatch({ type: 'undo' })} />
+      <ActionButton icon={ICONS.erase} label="effacer" onClick={() => dispatch({ type: 'erase' })} />
+      <ActionButton
+        icon={ICONS.pencil}
+        label="notes"
+        pressed={state.notesMode}
+        onClick={() => dispatch({ type: 'toggleNotes' })}
+      />
+      {extra}
     </div>
   );
 }

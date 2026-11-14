@@ -180,6 +180,19 @@ export const ICONS = {
     '#...#.....',
     '####......',
   ],
+  /** white flag — give up */
+  flag: [
+    '#........',
+    '#########',
+    '#.......#',
+    '#.......#',
+    '#.......#',
+    '#########',
+    '#........',
+    '#........',
+    '#........',
+    '#........',
+  ],
 } satisfies Record<string, Bitmap>;
 
 const pathCache = new WeakMap<Bitmap, string>();

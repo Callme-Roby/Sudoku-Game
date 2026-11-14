@@ -195,12 +195,42 @@ a {
   padding-right: 4px;
 }
 
-.stage {
+/* three blocks: header · grid + digits · footer actions */
+.game {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.game .bar {
+  width: var(--board-w);
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+.play {
   width: 100%;
-  flex: 1;
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* air above the grid (≈ 3× the old gap, more on tall screens), the rest goes below */
+.play::before,
+.play::after {
+  content: '';
+  flex: 1 0 0;
+}
+.play::before {
+  min-height: 36px;
+  max-height: 72px;
+}
+.play::after {
+  min-height: 24px;
+}
+
+.foot {
+  width: var(--board-w);
+  max-width: 100%;
 }
 
 /* ---------- board ---------- */
@@ -294,16 +324,10 @@ a {
 
 /* ---------- pad ---------- */
 
-.pad {
+.digits {
   width: var(--board-w);
   max-width: 100%;
   margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.digits {
   display: grid;
   grid-template-columns: repeat(var(--n), 1fr);
 }
@@ -332,6 +356,7 @@ a {
 .actions {
   display: flex;
   justify-content: space-around;
+  gap: 4px;
 }
 
 .action {
@@ -344,7 +369,14 @@ a {
   background: none;
   cursor: pointer;
   color: var(--ink);
-  min-width: 80px;
+  flex: 1 1 0;
+  max-width: 112px;
+  min-width: 0;
+}
+
+.action:disabled {
+  color: var(--line);
+  cursor: default;
 }
 
 .action .label {
@@ -524,12 +556,14 @@ a {
   }
 }
 
-/* large screens: the whole game sits in the middle */
+/* large screens: the game keeps phone-like proportions, centred in the window */
 @media (min-width: 720px) and (min-height: 700px) {
-  .screen {
-    justify-content: center;
+  body {
+    display: flex;
+    flex-direction: column;
   }
-  .stage {
-    flex: none;
+  .game {
+    min-height: min(100dvh, 920px);
+    margin-block: auto;
   }
 }

@@ -22,7 +22,7 @@ export function CreateRoom({ mode }: { mode: Mode }) {
   const [busy, setBusy] = useState<Level | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setName(readJSON<string>(NAME_KEY) ?? ''), []);
+  useEffect(() => setName((n) => n || (readJSON<string>(NAME_KEY) ?? '')), []);
 
   const create = async (level: Level) => {
     setBusy(level);

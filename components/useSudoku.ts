@@ -52,8 +52,14 @@ export function useKeyboard(dispatch: (a: Action) => void, n: number, enabled = 
   }, [dispatch, n, enabled]);
 }
 
+/**
+ * Height used by everything but the grid on a game screen: paddings, header (40),
+ * min air above (36) and below (24), digits (16 + 56), footer actions (~70).
+ */
+export const GAME_CHROME = 280;
+
 /** Integer cell size that fits the viewport, and the matching pixel unit. */
-export function useBoardSize(n: number, reservedHeight = 260) {
+export function useBoardSize(n: number, reservedHeight = GAME_CHROME) {
   const [size, setSize] = useState({ cell: n === 9 ? 38 : 56, u: 2 });
   useEffect(() => {
     const calc = () => {
