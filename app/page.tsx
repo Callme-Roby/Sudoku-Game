@@ -11,7 +11,7 @@ export default function Home() {
       </main>
       <footer>
         <a className="credit intro-credit" href="https://callmeroby.com" target="_blank" rel="noopener">
-          un jeu de Studio Roby <span className="dim">·</span> <span className="url">callmeroby.com</span>
+          Un jeu de Studio Roby <span className="dim">·</span> <span className="url">callmeroby.com</span>
         </a>
       </footer>
       <IntroDone />

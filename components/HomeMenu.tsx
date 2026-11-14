@@ -28,14 +28,14 @@ export function HomeMenu() {
       ))}
       <span className="sep intro-sep" aria-hidden style={at(5)} />
       <Link href="/defi" className="item intro-item" style={at(6)}>
-        <Scramble text="défier un ami" />
+        <Scramble text="Défier un ami" />
       </Link>
       <Link href="/royale" className="item intro-item" style={at(7)}>
-        <Scramble text="battle royale" />
+        <Scramble text="Battle royale" />
       </Link>
       <span className="sep intro-sep" aria-hidden style={at(8)} />
       <Link href="/classement" className="item intro-item" style={at(9)}>
-        <Scramble text="classement" />
+        <Scramble text="Classement" />
       </Link>
     </nav>
   );
@@ -54,7 +54,7 @@ function Welcome({ onDone }: { onDone: (name: string) => void }) {
       }}
     >
       <label className="field intro-item" style={at(0)}>
-        <span className="muted">ton prénom</span>
+        <span className="muted">Ton prénom</span>
         <input
           className="input"
           value={value}
@@ -65,10 +65,10 @@ function Welcome({ onDone }: { onDone: (name: string) => void }) {
         />
       </label>
       <button type="submit" className="item intro-item" style={at(1)} disabled={!ready}>
-        <Scramble text="c’est parti" />
+        <Scramble text="C’est parti" />
       </button>
       <p className="muted intro-item welcome-hint" style={at(2)}>
-        pour le classement et le jeu en ligne
+        Pour le classement et le jeu en ligne
       </p>
     </form>
   );

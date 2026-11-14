@@ -25,9 +25,9 @@ export async function api<T>(
       cache: 'no-store',
     });
   } catch {
-    throw new ApiError(0, 'connexion perdue');
+    throw new ApiError(0, 'Connexion perdue');
   }
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new ApiError(res.status, data.error ?? 'erreur');
+  if (!res.ok) throw new ApiError(res.status, data.error ?? 'Erreur');
   return data;
 }

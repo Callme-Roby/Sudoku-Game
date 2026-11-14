@@ -49,7 +49,7 @@ export function Rankings() {
         <Link href="/" className="icon-btn" aria-label="menu" style={{ justifySelf: 'start' }}>
           <Pixel rows={ICONS.back} />
         </Link>
-        <span>classement</span>
+        <span>Classement</span>
         <span />
       </header>
       <div className="rankings">
@@ -70,7 +70,7 @@ export function Rankings() {
         </div>
         <div className="scores">
           {status === 'offline' ? (
-            <span className="muted">classement indisponible</span>
+            <span className="muted">Classement indisponible</span>
           ) : board && board.level === level ? (
             <BoardList board={board} />
           ) : (
@@ -78,7 +78,7 @@ export function Rankings() {
           )}
           {level && (
             <Link href={`/solo/${level}`} className="item">
-              jouer en {LEVEL_LABEL[level]}
+              Jouer en {LEVEL_LABEL[level].toLowerCase()}
             </Link>
           )}
         </div>
@@ -115,7 +115,7 @@ function NameLine() {
           onChange={(e) => setValue(e.target.value)}
         />
         <button type="submit" className="item">
-          ok
+          OK
         </button>
       </form>
     );
@@ -124,7 +124,7 @@ function NameLine() {
     <p className="muted name-line">
       {name ? (
         <>
-          tu joues en tant que <span className="ink">{name}</span> ·{' '}
+          Tu joues en tant que <span className="ink">{name}</span> ·{' '}
         </>
       ) : null}
       <button
@@ -135,7 +135,7 @@ function NameLine() {
           setEditing(true);
         }}
       >
-        {name ? 'changer' : 'choisir un prénom'}
+        {name ? 'changer' : 'Choisir un prénom'}
       </button>
     </p>
   );

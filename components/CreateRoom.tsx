@@ -11,10 +11,10 @@ import { LEVEL_LABEL, LEVELS, type Level } from '@/lib/sudoku/bank';
 import type { Mode } from '@/lib/server/rooms';
 import { Pixel } from './Pixel';
 
-export const MODE_LABEL: Record<Mode, string> = { duel: 'défier un ami', royale: 'battle royale' };
+export const MODE_LABEL: Record<Mode, string> = { duel: 'Défier un ami', royale: 'Battle royale' };
 const MODE_HINT: Record<Mode, string> = {
-  duel: 'un contre un · même grille · le plus rapide gagne',
-  royale: 'jusqu’à 10 · même grille · le plus rapide gagne',
+  duel: 'Un contre un · même grille · le plus rapide gagne',
+  royale: 'Jusqu’à 10 · même grille · le plus rapide gagne',
 };
 
 export function CreateRoom({ mode }: { mode: Mode }) {
@@ -53,18 +53,18 @@ export function CreateRoom({ mode }: { mode: Mode }) {
       </header>
       <div className="lobby">
         <label className="field">
-          <span className="muted">ton nom</span>
+          <span className="muted">Ton nom</span>
           <input
             className="input"
             value={name}
             maxLength={16}
             autoComplete="nickname"
-            placeholder="joueur"
+            placeholder="Joueur"
             onChange={(e) => setName(e.target.value)}
           />
         </label>
         <div className="field">
-          <span className="muted">grille</span>
+          <span className="muted">Grille</span>
           <div className="menu">
             {LEVELS.map((level) => (
               <button

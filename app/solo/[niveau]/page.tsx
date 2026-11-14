@@ -8,7 +8,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ niveau: string }> }) {
   const { niveau } = await params;
-  return { title: isLevel(niveau) ? `sudoku · ${LEVEL_LABEL[niveau]}` : 'sudoku' };
+  return { title: isLevel(niveau) ? `Sudoku · ${LEVEL_LABEL[niveau]}` : 'Sudoku' };
 }
 
 export default async function SoloPage({ params }: { params: Promise<{ niveau: string }> }) {

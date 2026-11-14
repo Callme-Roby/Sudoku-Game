@@ -142,7 +142,7 @@ function Play({
         {state.won ? (
           <div className="done-panel" role="status">
             <div>
-              résolu en {formatTime(elapsed)}
+              Résolu en {formatTime(elapsed)}
               {best.record && <span className="muted"> · record perso</span>}
             </div>
             <Leaderboard level={level} run={run} values={state.values} time={elapsed} />
@@ -155,10 +155,10 @@ function Play({
         {state.won ? (
           <div className="row">
             <button type="button" className="item" onClick={onNew}>
-              nouvelle grille
+              Nouvelle grille
             </button>
             <Link href="/" className="item">
-              menu
+              Menu
             </Link>
           </div>
         ) : (

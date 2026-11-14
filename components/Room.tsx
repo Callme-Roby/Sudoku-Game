@@ -42,7 +42,7 @@ export function Room({ code }: { code: string }) {
         accept(await api<PublicRoom>(`/api/rooms/${code}`, { auth: creds }), sentAt);
       } catch (e) {
         if (e instanceof ApiError && e.status === 404) {
-          setFatal('partie introuvable');
+          setFatal('Partie introuvable');
           stop = true;
         }
       }
@@ -60,7 +60,7 @@ export function Room({ code }: { code: string }) {
 
   const me = creds ? room.players.find((p) => p.id === creds.id) : undefined;
   if (!me || !creds) {
-    if (room.status !== 'lobby') return <Notice text="la partie a déjà commencé" />;
+    if (room.status !== 'lobby') return <Notice text="La partie a déjà commencé" />;
     return (
       <Join
         room={room}
@@ -82,7 +82,7 @@ function Header({ room, right }: { room: PublicRoom; right?: React.ReactNode }) 
         <Pixel rows={ICONS.back} />
       </Link>
       <span>{LEVEL_LABEL[room.level]}</span>
-      {right ?? <span className="muted">{room.mode === 'duel' ? 'duel' : 'royale'}</span>}
+      {right ?? <span className="muted">{room.mode === 'duel' ? 'Duel' : 'Royale'}</span>}
     </header>
   );
 }
@@ -92,7 +92,7 @@ function Notice({ text }: { text: string }) {
     <main className="screen home">
       <p style={{ margin: 0 }}>{text}</p>
       <Link href="/" className="item">
-        menu
+        Menu
       </Link>
     </main>
   );
@@ -131,22 +131,22 @@ function Join({ room, onJoined }: { room: PublicRoom; onJoined: (c: RoomCreds) =
           {host ? `${host.name} te défie` : MODE_LABEL[room.mode]}
           <br />
           <span className="muted">
-            {room.mode === 'duel' ? 'un contre un' : 'battle royale'} · {LEVEL_LABEL[room.level]}
+            {room.mode === 'duel' ? 'Un contre un' : 'Battle royale'} · {LEVEL_LABEL[room.level]}
           </span>
         </p>
         <label className="field">
-          <span className="muted">ton nom</span>
+          <span className="muted">Ton nom</span>
           <input
             className="input"
             value={name}
             maxLength={16}
             autoComplete="nickname"
-            placeholder="joueur"
+            placeholder="Joueur"
             onChange={(e) => setName(e.target.value)}
           />
         </label>
         <button type="submit" className="item" disabled={busy || full}>
-          {full ? 'partie complète' : 'rejoindre'}
+          {full ? 'Partie complète' : 'Rejoindre'}
         </button>
         {error && <p className="muted" style={{ margin: 0 }}>{error}</p>}
       </form>
@@ -169,12 +169,12 @@ function Lobby({ room, creds, onRoom }: { room: PublicRoom; creds: RoomCreds; on
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      setError('copie impossible — sélectionne le lien');
+      setError('Copie impossible — sélectionne le lien');
     }
   };
   const share = async () => {
     try {
-      await navigator.share({ title: 'sudoku', text: 'une grille, le plus rapide gagne', url });
+      await navigator.share({ title: 'Sudoku', text: 'Une grille, le plus rapide gagne', url });
     } catch {
       /* cancelled */
     }
@@ -193,22 +193,22 @@ function Lobby({ room, creds, onRoom }: { room: PublicRoom; creds: RoomCreds; on
       <Header room={room} />
       <div className="lobby">
         <div className="field" style={{ width: '100%' }}>
-          <span className="muted">{room.mode === 'duel' ? 'envoie ce lien à ton adversaire' : 'envoie ce lien aux joueurs'}</span>
+          <span className="muted">{room.mode === 'duel' ? 'Envoie ce lien à ton adversaire' : 'Envoie ce lien aux joueurs'}</span>
           <div className="link">{url.replace(/^https?:\/\//, '')}</div>
           <div className="row">
             <button type="button" className="item" style={{ minWidth: 0 }} onClick={copy}>
-              {copied ? 'copié' : 'copier'}
+              {copied ? 'Copié' : 'Copier'}
             </button>
             {canShare && (
               <button type="button" className="item" style={{ minWidth: 0 }} onClick={share}>
-                partager
+                Partager
               </button>
             )}
           </div>
         </div>
         <div className="field" style={{ width: '100%' }}>
           <span className="muted">
-            joueurs {present.length} / {room.max}
+            Joueurs {present.length} / {room.max}
           </span>
           <ul className="players">
             {present.map((p) => (
@@ -216,17 +216,17 @@ function Lobby({ room, creds, onRoom }: { room: PublicRoom; creds: RoomCreds; on
                 <span style={p.id === creds.id ? { textDecoration: 'underline', textUnderlineOffset: 3 } : undefined}>
                   {p.name}
                 </span>
-                <span className="muted">{p.id === room.hostId ? 'hôte' : ''}</span>
+                <span className="muted">{p.id === room.hostId ? 'Hôte' : ''}</span>
               </li>
             ))}
           </ul>
         </div>
         {isHost ? (
           <button type="button" className="item" disabled={present.length < 2} onClick={start}>
-            {present.length < 2 ? 'en attente de joueurs…' : 'lancer'}
+            {present.length < 2 ? 'En attente de joueurs…' : 'Lancer'}
           </button>
         ) : (
-          <span className="muted">en attente de l’hôte…</span>
+          <span className="muted">En attente de l’hôte…</span>
         )}
         {error && <span className="muted">{error}</span>}
       </div>
@@ -347,7 +347,7 @@ function Race({
               <li key={p.id} className="racer">
                 <span className="name">{p.name}</span>
                 <span className="muted">
-                  {p.finishedMs !== null ? formatTime(p.finishedMs) : p.gaveUp ? 'abandon' : !p.active ? 'parti' : ''}
+                  {p.finishedMs !== null ? formatTime(p.finishedMs) : p.gaveUp ? 'Abandon' : !p.active ? 'Parti' : ''}
                 </span>
                 <span className="track">
                   <i style={{ width: `${Math.round((p.finishedMs !== null ? 1 : p.progress) * 100)}%` }} />
@@ -368,12 +368,12 @@ function Race({
           <div className="done-panel" role="status">
             <div>
               {meP.gaveUp
-                ? 'abandon'
+                ? 'Abandon'
                 : myRank === 1
-                  ? 'victoire'
+                  ? 'Victoire'
                   : myRank > 1
                     ? `${ordinal(myRank)} sur ${ranked.length}`
-                    : 'terminé'}
+                    : 'Terminé'}
               {!meP.gaveUp && <span className="muted"> · {formatTime(elapsed)}</span>}
             </div>
             <ol className="players" style={{ maxWidth: 320 }}>
@@ -391,9 +391,9 @@ function Race({
                     {p.finishedMs !== null
                       ? formatTime(p.finishedMs)
                       : p.gaveUp
-                        ? 'abandon'
+                        ? 'Abandon'
                         : !p.active
-                          ? 'parti'
+                          ? 'Parti'
                           : `${Math.round(p.progress * 100)} %`}
                   </span>
                 </li>
@@ -409,13 +409,13 @@ function Race({
           <div className="row">
             {allDone && isHost ? (
               <button type="button" className="item" onClick={rematch}>
-                rejouer
+                Rejouer
               </button>
             ) : (
-              <span className="item muted">{allDone ? 'en attente de l’hôte…' : 'les autres jouent…'}</span>
+              <span className="item muted">{allDone ? 'En attente de l’hôte…' : 'Les autres jouent…'}</span>
             )}
             <Link href="/" className="item">
-              menu
+              Menu
             </Link>
           </div>
         ) : (
@@ -441,7 +441,7 @@ function GiveUp({ disabled, onConfirm }: { disabled: boolean; onConfirm: () => v
   return (
     <ActionButton
       icon={ICONS.flag}
-      label={armed ? 'confirmer' : 'abandon'}
+      label={armed ? 'Confirmer' : 'Abandon'}
       pressed={armed}
       disabled={disabled}
       onClick={() => (armed ? onConfirm() : setArmed(true))}

@@ -12,10 +12,10 @@ export const LEVELS = ['facile', 'moyen', 'difficile', 'extreme', 'mini'] as con
 export type Level = (typeof LEVELS)[number];
 
 export const LEVEL_LABEL: Record<Level, string> = {
-  facile: 'facile',
-  moyen: 'moyen',
-  difficile: 'difficile',
-  extreme: 'extrême',
+  facile: 'Facile',
+  moyen: 'Moyen',
+  difficile: 'Difficile',
+  extreme: 'Extrême',
   mini: '6 × 6',
 };
 

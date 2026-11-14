@@ -2,10 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'sudoku',
+  title: 'Sudoku',
   description: 'Sudoku, tout simplement. Seul, en duel ou en battle royale.',
-  applicationName: 'sudoku',
-  appleWebApp: { capable: true, title: 'sudoku', statusBarStyle: 'default' },
+  applicationName: 'Sudoku',
+  appleWebApp: { capable: true, title: 'Sudoku', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
 };
 

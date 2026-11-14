@@ -44,13 +44,13 @@ describe('leaderboard', () => {
     vi.setSystemTime(Date.now() + 60_000);
     const values = solved(99);
     const wrong = values.replace(/^(.)(.)/, '$2$1');
-    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values: wrong, time: 50_000 })).rejects.toThrow('grille');
+    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values: wrong, time: 50_000 })).rejects.toThrow(/grille/i);
     // faster than humanly possible
-    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 2_000 })).rejects.toThrow('temps');
+    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 2_000 })).rejects.toThrow(/temps/i);
     // claiming more time than really elapsed is impossible: the client clock only pauses
-    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 120_000 })).rejects.toThrow('temps');
+    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 120_000 })).rejects.toThrow(/temps/i);
     await submitRun({ run, player: 'player-cheat', name: 'x', values, time: 50_000 });
-    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 50_000 })).rejects.toThrow('inconnue');
+    await expect(submitRun({ run, player: 'player-cheat', name: 'x', values, time: 50_000 })).rejects.toThrow(/inconnue/i);
   });
 });
 

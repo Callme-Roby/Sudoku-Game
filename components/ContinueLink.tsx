@@ -21,7 +21,7 @@ export function ContinueLink() {
         className="item intro-item"
         style={{ animationDelay: '880ms' }}
       >
-        <Scramble text={`continuer · ${LEVEL_LABEL[saved.level]}`} />
+        <Scramble text={`Continuer · ${LEVEL_LABEL[saved.level]}`} />
       </Link>
       <span className="sep" aria-hidden />
     </>

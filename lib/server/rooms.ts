@@ -86,7 +86,7 @@ export function isMode(x: unknown): x is Mode {
 
 export function cleanName(raw: unknown): string {
   const s = typeof raw === 'string' ? raw.replace(/\s+/g, ' ').trim() : '';
-  return Array.from(s).slice(0, 16).join('') || 'joueur';
+  return Array.from(s).slice(0, 16).join('') || 'Joueur';
 }
 
 export function normalizeCode(raw: string): string | null {
@@ -122,7 +122,7 @@ async function load(code: string): Promise<{ meta: RoomMeta; players: PlayerRec[
     ['GET', metaKey(code)],
     ['HGETALL', playersKey(code)],
   ]);
-  if (!rawMeta) throw new HttpError(404, 'partie introuvable');
+  if (!rawMeta) throw new HttpError(404, 'Partie introuvable');
   const meta = (typeof rawMeta === 'string' ? JSON.parse(rawMeta) : rawMeta) as RoomMeta;
   const players = Object.values(pairs(rawPlayers))
     .map((v) => JSON.parse(v) as PlayerRec)
@@ -176,12 +176,12 @@ function saveMeta(meta: RoomMeta) {
 function authenticate(players: PlayerRec[], auth: string | null): PlayerRec {
   const [id, token] = (auth ?? '').split(':');
   const me = players.find((p) => p.id === id);
-  if (!me || !token || me.token !== token) throw new HttpError(403, 'joueur inconnu');
+  if (!me || !token || me.token !== token) throw new HttpError(403, 'Joueur inconnu');
   return me;
 }
 
 export async function createRoom(mode: unknown, level: unknown, name: unknown) {
-  if (!isMode(mode) || !isLevel(level)) throw new HttpError(400, 'paramètres invalides');
+  if (!isMode(mode) || !isLevel(level)) throw new HttpError(400, 'Paramètres invalides');
   const now = Date.now();
   const host = newPlayer(String(name ?? ''), now, 1);
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -202,7 +202,7 @@ export async function createRoom(mode: unknown, level: unknown, name: unknown) {
     await store().exec([savePlayer(code, host), ['EXPIRE', playersKey(code), TTL_S]]);
     return { code, id: host.id, token: host.token };
   }
-  throw new HttpError(503, 'réessaie dans un instant');
+  throw new HttpError(503, 'Réessaie dans un instant');
 }
 
 export async function getRoom(code: string, auth: string | null): Promise<PublicRoom> {
@@ -225,9 +225,9 @@ export async function getRoom(code: string, auth: string | null): Promise<Public
 export async function joinRoom(code: string, name: unknown) {
   const { meta, players } = await load(code);
   const now = Date.now();
-  if (meta.status !== 'lobby') throw new HttpError(409, 'la partie a déjà commencé');
+  if (meta.status !== 'lobby') throw new HttpError(409, 'La partie a déjà commencé');
   const present = players.filter((p) => isActive(p, now));
-  if (present.length >= MAX_PLAYERS[meta.mode]) throw new HttpError(409, 'la partie est complète');
+  if (present.length >= MAX_PLAYERS[meta.mode]) throw new HttpError(409, 'La partie est complète');
   const me = newPlayer(String(name ?? ''), now, meta.round);
   await store().exec([savePlayer(code, me), ['EXPIRE', playersKey(code), TTL_S]]);
   return { code, id: me.id, token: me.token };
@@ -256,9 +256,9 @@ export async function startRoom(code: string, auth: string | null) {
   const { meta, players } = await load(code);
   const now = Date.now();
   const me = authenticate(players, auth);
-  if (effectiveHost(meta, players, now) !== me.id) throw new HttpError(403, "seul l'hôte peut lancer");
+  if (effectiveHost(meta, players, now) !== me.id) throw new HttpError(403, "Seul l'hôte peut lancer");
   if (meta.status !== 'lobby') return view(meta, players, now);
-  if (players.filter((p) => isActive(p, now)).length < 2) throw new HttpError(409, 'il faut au moins deux joueurs');
+  if (players.filter((p) => isActive(p, now)).length < 2) throw new HttpError(409, 'Il faut au moins deux joueurs');
   return launch(meta, players, now, false);
 }
 
@@ -266,11 +266,11 @@ export async function rematch(code: string, auth: string | null) {
   const { meta, players } = await load(code);
   const now = Date.now();
   const me = authenticate(players, auth);
-  if (effectiveHost(meta, players, now) !== me.id) throw new HttpError(403, "seul l'hôte peut relancer");
-  if (meta.status !== 'playing') throw new HttpError(409, 'pas de partie en cours');
+  if (effectiveHost(meta, players, now) !== me.id) throw new HttpError(403, "Seul l'hôte peut relancer");
+  if (meta.status !== 'playing') throw new HttpError(409, 'Pas de partie en cours');
   const current = players.filter((p) => isActive(p, now));
   const over = current.every((p) => p.round === meta.round && (p.finishedMs !== null || p.gaveUp));
-  if (!over) throw new HttpError(409, 'la manche n’est pas finie');
+  if (!over) throw new HttpError(409, 'La manche n’est pas finie');
   return launch(meta, players, now, true);
 }
 
@@ -280,9 +280,9 @@ export async function reportProgress(code: string, auth: string | null, body: un
   const me = authenticate(players, auth);
   const { round, values, giveUp } = (body ?? {}) as { round?: number; values?: string; giveUp?: boolean };
   if (meta.status !== 'playing' || meta.startAt === null || round !== meta.round) {
-    throw new HttpError(409, 'manche terminée');
+    throw new HttpError(409, 'Manche terminée');
   }
-  if (now < meta.startAt) throw new HttpError(409, 'pas encore');
+  if (now < meta.startAt) throw new HttpError(409, 'Pas encore');
   if (me.round !== meta.round) {
     me.round = meta.round;
     me.progress = 0;
@@ -297,10 +297,10 @@ export async function reportProgress(code: string, auth: string | null, body: un
       const puzzle = makePuzzle(meta.level, meta.seed);
       const g = geometryFor(meta.level);
       if (typeof values !== 'string' || values.length !== g.size || !/^[0-9]+$/.test(values)) {
-        throw new HttpError(400, 'grille invalide');
+        throw new HttpError(400, 'Grille invalide');
       }
       const grid = Array.from(values, Number);
-      if (puzzle.givens.some((v, i) => v && grid[i] !== v)) throw new HttpError(400, 'grille invalide');
+      if (puzzle.givens.some((v, i) => v && grid[i] !== v)) throw new HttpError(400, 'Grille invalide');
       me.progress = progress(grid, puzzle.givens, puzzle.solution);
       if (isCompleteAndValid(grid, g)) {
         me.progress = 1;

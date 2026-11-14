@@ -7,7 +7,7 @@ export async function handle(fn: () => Promise<unknown>): Promise<NextResponse> 
   } catch (e) {
     if (e instanceof HttpError) return NextResponse.json({ error: e.message }, { status: e.status });
     console.error(e);
-    return NextResponse.json({ error: 'erreur serveur' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 

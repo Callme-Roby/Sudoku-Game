@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'sudoku',
-    short_name: 'sudoku',
+    name: 'Sudoku',
+    short_name: 'Sudoku',
     description: 'Sudoku, tout simplement. Seul, en duel ou en battle royale.',
     lang: 'fr',
     start_url: '/',

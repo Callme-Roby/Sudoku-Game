@@ -76,7 +76,7 @@ export function Leaderboard({
 
   return (
     <div className="scores">
-      <span className="muted">meilleurs temps</span>
+      <span className="muted">Meilleurs temps</span>
       {phase === 'ask' && (
         <form
           className="ask"
@@ -90,18 +90,18 @@ export function Leaderboard({
             value={name}
             maxLength={16}
             autoComplete="given-name"
-            placeholder="ton prénom"
+            placeholder="Ton prénom"
             aria-label="ton prénom pour le classement"
             onChange={(e) => setName(e.target.value)}
           />
           <button type="submit" className="item">
-            ok
+            OK
           </button>
         </form>
       )}
       {board && <BoardList board={board} />}
       <Link href={`/classement?niveau=${level}`} className="item muted">
-        tout le classement
+        Tout le classement
       </Link>
     </div>
   );
@@ -123,7 +123,7 @@ export function BoardList({ board }: { board: Board }) {
       )}
       {board.top.length === 0 && (
         <li className="muted empty">
-          <span>aucun temps pour l’instant</span>
+          <span>Aucun temps pour l’instant</span>
         </li>
       )}
     </ol>

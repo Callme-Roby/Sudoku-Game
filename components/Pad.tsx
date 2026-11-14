@@ -60,11 +60,11 @@ export function ActionButton({
 export function Actions({ state, dispatch, extra }: { state: GameState; dispatch: Dispatch; extra?: ReactNode }) {
   return (
     <div className="actions">
-      <ActionButton icon={ICONS.undo} label="annuler" onClick={() => dispatch({ type: 'undo' })} />
-      <ActionButton icon={ICONS.erase} label="effacer" onClick={() => dispatch({ type: 'erase' })} />
+      <ActionButton icon={ICONS.undo} label="Annuler" onClick={() => dispatch({ type: 'undo' })} />
+      <ActionButton icon={ICONS.erase} label="Effacer" onClick={() => dispatch({ type: 'erase' })} />
       <ActionButton
         icon={ICONS.pencil}
-        label="notes"
+        label="Notes"
         pressed={state.notesMode}
         onClick={() => dispatch({ type: 'toggleNotes' })}
       />
