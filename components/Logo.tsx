@@ -4,7 +4,7 @@ import { Pixel } from './Pixel';
 export function Logo() {
   return (
     <h1 className="logo-wrap" style={{ margin: 0 }}>
-      <Pixel rows={LOGO} label="sudoku" className="logo" />
+      <Pixel rows={LOGO} label="Sudoku" className="logo" />
     </h1>
   );
 }

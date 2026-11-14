@@ -5,7 +5,7 @@
  *
  *   node scripts/make-logo.mjs <font.woff2|ttf> [height=38] [text=sudoku]
  *
- * The current logo uses Great Vibes (OFL, `npm i @fontsource/great-vibes`) at height 38.
+ * The current logo: Great Vibes (OFL, `npm i @fontsource/great-vibes`), height 52, text "Sudoku".
  * Needs Playwright with Chromium (`npx playwright install chromium`).
  */
 import { readFileSync, writeFileSync } from 'node:fs';

@@ -61,7 +61,7 @@ Chaque joueur n'écrit que son propre champ Redis, donc pas de conflit d'écritu
 
 - Couleurs : jetons CSS dans `app/globals.css` (`--paper #efede7`, `--ink #1f1e1c`, gris `--zone`,
   `--same`, `--sel`) — et leur inverse en mode sombre.
-- Logo « sudoku » : la police script *Great Vibes* squelettisée en trait d'un pixel puis rééchantillonnée
+- Logo « Sudoku » : la police script *Great Vibes* squelettisée en trait d'un pixel puis rééchantillonnée
   sur une grille fine (`scripts/make-logo.mjs`, pour changer de police ou de taille).
 - Chiffres, notes et icônes dessinés à la main pixel par pixel (`lib/pixel/glyphs.ts`), rendus en SVG
   net (`shape-rendering: crispEdges`) ; un « pixel » = `--u` (2 px CSS).
