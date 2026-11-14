@@ -34,7 +34,7 @@ Pour tester à plusieurs, ouvre le lien d'invitation dans une autre fenêtre (ou
 2. **Pour le multijoueur** : dans le projet Vercel, onglet *Storage* → *Upstash for Redis* (Marketplace) →
    créer une base (l'offre gratuite suffit) et la connecter au projet.
    Les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN` sont ajoutées automatiquement
-   (`UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` marchent aussi).
+   (un autre préfixe, ou `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`, marche aussi).
 3. Redéployer. Le solo n'a besoin de rien : il tourne entièrement dans le navigateur.
 
 > Sans Redis, les fonctions serverless de Vercel ne partagent pas leur mémoire : les salles multijoueur

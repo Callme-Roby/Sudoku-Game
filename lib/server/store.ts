@@ -190,12 +190,35 @@ class MemoryStore implements Store {
 
 const g = globalThis as unknown as { __sudokuStore?: Store };
 
+/**
+ * Upstash REST credentials, whatever prefix the Vercel integration was given:
+ * KV_REST_API_URL / KV_REST_API_TOKEN (default), <PREFIX>_REST_API_URL / _TOKEN
+ * (custom prefix) or UPSTASH_REDIS_REST_URL / _TOKEN (Upstash's own integration).
+ */
+export function upstashCredentials(env: Record<string, string | undefined> = process.env) {
+  const candidates: [string, string][] = [
+    ['KV_REST_API_URL', 'KV_REST_API_TOKEN'],
+    ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'],
+  ];
+  for (const key of Object.keys(env).sort()) {
+    const custom = /^(.+)_REST_API_URL$/.exec(key);
+    if (custom) candidates.push([key, `${custom[1]}_REST_API_TOKEN`]);
+    const upstash = /^(.+)_REDIS_REST_URL$/.exec(key);
+    if (upstash) candidates.push([key, `${upstash[1]}_REDIS_REST_TOKEN`]);
+  }
+  for (const [u, t] of candidates) {
+    const url = env[u];
+    const token = env[t];
+    if (url?.startsWith('https://') && token) return { url, token };
+  }
+  return null;
+}
+
 export function store(): Store {
   if (g.__sudokuStore) return g.__sudokuStore;
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) {
-    g.__sudokuStore = new UpstashStore(url, token);
+  const creds = upstashCredentials();
+  if (creds) {
+    g.__sudokuStore = new UpstashStore(creds.url, creds.token);
   } else {
     if (process.env.VERCEL) {
       console.warn('[sudoku] no Redis configured: rooms and leaderboards live in memory and are not shared between instances.');
