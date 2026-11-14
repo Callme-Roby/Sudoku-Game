@@ -35,7 +35,8 @@ Pour tester à plusieurs, ouvre le lien d'invitation dans une autre fenêtre (ou
    créer une base (l'offre gratuite suffit) et la connecter au projet.
    Les variables `KV_REST_API_URL` et `KV_REST_API_TOKEN` sont ajoutées automatiquement
    (un autre préfixe, ou `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`, marche aussi).
-3. Redéployer. Le solo n'a besoin de rien : il tourne entièrement dans le navigateur.
+3. Redéployer, puis ouvrir `/api/health` : `{"storage":"redis","reachable":true}` veut dire que les parties
+   en ligne et les classements sont bien partagés (`"memory"` : variables absentes ; `false` : base injoignable).
 
 > Sans Redis, les fonctions serverless de Vercel ne partagent pas leur mémoire : les salles multijoueur
 > ne seraient pas fiables en production.

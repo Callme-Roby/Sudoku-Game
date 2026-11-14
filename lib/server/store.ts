@@ -228,6 +228,18 @@ export function store(): Store {
   return g.__sudokuStore;
 }
 
+/** For /api/health: which storage is in use, and does it answer. No secrets. */
+export async function storageStatus() {
+  const redis = store() instanceof UpstashStore;
+  try {
+    await store().exec([['GET', 'sudoku:health']]);
+    return { storage: redis ? 'redis' : 'memory', reachable: true };
+  } catch (e) {
+    console.error('[sudoku] storage check failed', e);
+    return { storage: redis ? 'redis' : 'memory', reachable: false };
+  }
+}
+
 /** Redis HGETALL comes back as a flat [field, value, …] list. */
 export function pairs(raw: unknown): Record<string, string> {
   const out: Record<string, string> = {};
