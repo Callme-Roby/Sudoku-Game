@@ -53,10 +53,13 @@ export function useKeyboard(dispatch: (a: Action) => void, n: number, enabled = 
 }
 
 /**
- * Height used by everything but the grid on a game screen: paddings, header (40),
- * min air above (36) and below (24), digits (16 + 56), footer actions (~70).
+ * Height used by everything but the grid and the air under the header:
+ * paddings, header (40), digits (16 + 56), gap (20), footer actions (~70).
  */
-export const GAME_CHROME = 280;
+export const GAME_CHROME = 230;
+
+/** Air between the header and the grid — same formula as `.play::before` in globals.css. */
+export const topGap = (viewportHeight: number) => Math.min(72, Math.max(36, viewportHeight * 0.105));
 
 /** Integer cell size that fits the viewport, and the matching pixel unit. */
 export function useBoardSize(n: number, reservedHeight = GAME_CHROME) {
@@ -64,7 +67,7 @@ export function useBoardSize(n: number, reservedHeight = GAME_CHROME) {
   useEffect(() => {
     const calc = () => {
       const w = Math.min(window.innerWidth, 560) - 32;
-      const h = window.innerHeight - reservedHeight;
+      const h = window.innerHeight - reservedHeight - topGap(window.innerHeight);
       const avail = Math.max(Math.min(w, h), n * 30);
       const max = n === 9 ? 56 : 76;
       const cell = Math.max(28, Math.min(max, Math.floor((avail - (n + 1)) / n)));
