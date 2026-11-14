@@ -32,8 +32,10 @@ class UpstashStore implements Store {
   }
 }
 
+type ZSet = { kind: 'zset'; scores: Map<string, number> };
+
 interface Entry {
-  value: string | Map<string, string>;
+  value: string | Map<string, string> | ZSet;
   expires: number;
 }
 
@@ -56,6 +58,21 @@ class MemoryStore implements Store {
     const m = new Map<string, string>();
     this.data.set(key, { value: m, expires: e?.expires ?? 0 });
     return m;
+  }
+
+  private zset(key: string, create = false): ZSet | null {
+    const e = this.live(key);
+    if (e && typeof e.value === 'object' && 'kind' in e.value) return e.value;
+    if (!create) return null;
+    const z: ZSet = { kind: 'zset', scores: new Map() };
+    this.data.set(key, { value: z, expires: e?.expires ?? 0 });
+    return z;
+  }
+
+  /** members sorted by score, then member (Redis order) */
+  private sorted(z: ZSet | null): [string, number][] {
+    if (!z) return [];
+    return [...z.scores.entries()].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
   }
 
   async exec(cmds: Cmd[]): Promise<unknown[]> {
@@ -93,6 +110,71 @@ class MemoryStore implements Store {
           for (const f of args) if (e.value.delete(String(f))) n++;
           return n;
         }
+        case 'HMGET': {
+          const e = this.live(k);
+          const h = e && e.value instanceof Map ? e.value : new Map<string, string>();
+          return args.map((f) => h.get(String(f)) ?? null);
+        }
+        case 'DEL': {
+          return [k, ...args.map(String)].reduce((n, x) => n + (this.data.delete(x) ? 1 : 0), 0);
+        }
+        case 'ZADD': {
+          const z = this.zset(k, true)!;
+          let i = 0;
+          const flags = new Set<string>();
+          while (['LT', 'GT', 'NX', 'XX'].includes(String(args[i]).toUpperCase())) flags.add(String(args[i++]).toUpperCase());
+          let added = 0;
+          for (; i + 1 < args.length; i += 2) {
+            const score = Number(args[i]);
+            const member = String(args[i + 1]);
+            const cur = z.scores.get(member);
+            if (cur === undefined) {
+              if (flags.has('XX')) continue;
+              z.scores.set(member, score);
+              added++;
+            } else if (!flags.has('NX')) {
+              if (flags.has('LT') && score >= cur) continue;
+              if (flags.has('GT') && score <= cur) continue;
+              z.scores.set(member, score);
+            }
+          }
+          return added;
+        }
+        case 'ZRANGE': {
+          const list = this.sorted(this.zset(k));
+          const n = list.length;
+          let start = Number(args[0]);
+          let stop = Number(args[1]);
+          if (start < 0) start += n;
+          if (stop < 0) stop += n;
+          const slice = list.slice(Math.max(0, start), stop + 1);
+          return String(args[2] ?? '').toUpperCase() === 'WITHSCORES'
+            ? slice.flatMap(([m, sc]) => [m, String(sc)])
+            : slice.map(([m]) => m);
+        }
+        case 'ZRANK': {
+          const i = this.sorted(this.zset(k)).findIndex(([m]) => m === String(args[0]));
+          return i < 0 ? null : i;
+        }
+        case 'ZSCORE': {
+          const v = this.zset(k)?.scores.get(String(args[0]));
+          return v === undefined ? null : String(v);
+        }
+        case 'ZCARD':
+          return this.zset(k)?.scores.size ?? 0;
+        case 'ZREMRANGEBYRANK': {
+          const z = this.zset(k);
+          if (!z) return 0;
+          const list = this.sorted(z);
+          const n = list.length;
+          let start = Number(args[0]);
+          let stop = Number(args[1]);
+          if (start < 0) start += n;
+          if (stop < 0) stop += n;
+          const gone = list.slice(Math.max(0, start), stop + 1);
+          for (const [m] of gone) z.scores.delete(m);
+          return gone.length;
+        }
         case 'EXPIRE': {
           const e = this.live(k);
           if (!e) return 0;
@@ -116,7 +198,7 @@ export function store(): Store {
     g.__sudokuStore = new UpstashStore(url, token);
   } else {
     if (process.env.VERCEL) {
-      console.warn('[sudoku] no Redis configured: multiplayer rooms live in memory and will not be shared between instances.');
+      console.warn('[sudoku] no Redis configured: rooms and leaderboards live in memory and are not shared between instances.');
     }
     g.__sudokuStore = new MemoryStore();
   }

@@ -461,6 +461,44 @@ a {
   min-width: 0;
 }
 
+/* ---------- leaderboard ---------- */
+
+.scores {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scores .players {
+  width: 100%;
+}
+
+.scores .players li.empty {
+  justify-content: center;
+}
+
+.ask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ask .input {
+  width: 160px;
+}
+
+.ask .item {
+  min-width: 0;
+}
+
+.me {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- multiplayer ---------- */
 
 .field {

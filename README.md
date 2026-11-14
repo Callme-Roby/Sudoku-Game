@@ -9,6 +9,8 @@ et un trait de pixel art très fin.
 - Notes (crayon), annuler, effacer, conflits signalés par une trame, chiffres terminés estompés
 - Clavier : `1`–`9`, flèches, `⌫`, `N` (notes), `Ctrl/⌘ + Z`
 - Partie solo sauvegardée automatiquement (recharger la page reprend la grille), record par niveau
+- **Classement** par niveau : à la fin d'une grille solo, les 5 meilleurs temps avec les prénoms
+  (ta ligne soulignée, ta place si tu es plus loin). Le prénom est demandé une fois, puis retenu
 - Installable comme web app (manifest + icônes), thème sombre automatique
 
 ## Lancer en local
@@ -51,6 +53,11 @@ Pour tester à plusieurs, ouvre le lien d'invitation dans une autre fenêtre (ou
 À l'exécution, une graine (`seed`) choisit une grille de la banque et la mélange (chiffres, lignes,
 colonnes, bandes, transposition) : la difficulté est conservée et les variantes sont pratiquement
 infinies. En multijoueur, tout le monde reçoit la même graine, donc la même grille.
+
+**Classement.** Au début de chaque grille solo, le serveur note l'heure (`/api/scores/start`). À la fin,
+il n'accepte qu'une grille réellement résolue pour cette graine, avec un temps ni plus long que le temps
+réellement écoulé, ni plus court que 0,5 s par case à remplir. Redis garde le meilleur temps de chaque
+joueur (un identifiant anonyme par appareil) et son prénom.
 
 **Multijoueur.** Les clients interrogent `/api/rooms/[code]` toutes les 1,5 s (pas de WebSocket :
 ça marche tel quel sur Vercel). Le serveur garde l'horloge (compte à rebours, chrono), recalcule la

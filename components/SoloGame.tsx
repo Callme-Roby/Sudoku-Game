@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { bestKey, formatTime, readJSON, SOLO_KEY, writeJSON, type SavedSolo } from '@/lib/game/local';
+import { api } from '@/lib/game/api';
 import { ICONS } from '@/lib/pixel/glyphs';
 import { geometryFor, LEVEL_LABEL, makePuzzle, type Level } from '@/lib/sudoku/bank';
 import { randomSeed } from '@/lib/sudoku/rng';
 import { Board } from './Board';
+import { Leaderboard } from './Leaderboard';
 import { Actions, DigitPad } from './Pad';
 import { Pixel } from './Pixel';
 import { GAME_CHROME, useBoardSize, useKeyboard, useSudoku } from './useSudoku';
@@ -59,6 +61,19 @@ function Play({
   elapsedRef.current = elapsed;
   useKeyboard(dispatch, g.n, !state.won);
 
+  // leaderboard: the server notes when this grid started
+  const [run, setRun] = useState<string | null>(saved?.run ?? null);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (run || state.won || asked.current) return;
+    asked.current = true;
+    api<{ run: string }>('/api/scores/start', { method: 'POST', body: { level, seed } })
+      .then((r) => setRun(r.run))
+      .catch(() => {
+        /* offline: the grid still plays, just without leaderboard */
+      });
+  }, [run, state.won, level, seed]);
+
   // timer — only runs while the page is visible
   useEffect(() => {
     if (state.won) return;
@@ -81,8 +96,9 @@ function Play({
       notes: state.notes,
       elapsed: elapsedRef.current,
       won: state.won,
+      run,
     } satisfies SavedSolo);
-  }, [level, seed, state.values, state.notes, state.won]);
+  }, [level, seed, state.values, state.notes, state.won, run]);
   useEffect(save, [save]);
   useEffect(() => {
     const id = window.setInterval(save, 3000);
@@ -125,10 +141,11 @@ function Play({
         <Board g={g} state={state} dispatch={dispatch} cell={cell} u={u} />
         {state.won ? (
           <div className="done-panel" role="status">
-            <div>résolu en {formatTime(elapsed)}</div>
-            <div className="muted">
-              {best.record ? 'nouveau record' : best.time !== null ? `record ${formatTime(best.time)}` : '\u00a0'}
+            <div>
+              résolu en {formatTime(elapsed)}
+              {best.record && <span className="muted"> · record perso</span>}
             </div>
+            <Leaderboard level={level} run={run} values={state.values} time={elapsed} />
           </div>
         ) : (
           <DigitPad n={g.n} state={state} dispatch={dispatch} />

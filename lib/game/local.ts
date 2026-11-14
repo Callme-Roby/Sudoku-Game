@@ -36,6 +36,8 @@ export interface SavedSolo {
   notes: number[];
   elapsed: number;
   won: boolean;
+  /** leaderboard run id from /api/scores/start */
+  run?: string | null;
 }
 
 export const SOLO_KEY = 'sudoku:solo';
@@ -46,4 +48,19 @@ export const roomKey = (code: string) => `sudoku:salle:${code}`;
 export interface RoomCreds {
   id: string;
   token: string;
+}
+
+const ID_KEY = 'sudoku:id';
+
+/** Anonymous id of this device's player, for the leaderboards. */
+export function playerId(): string {
+  let id = readJSON<string>(ID_KEY);
+  if (!id || !/^[a-z0-9-]{8,40}$/.test(id)) {
+    id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+    writeJSON(ID_KEY, id);
+  }
+  return id;
 }
