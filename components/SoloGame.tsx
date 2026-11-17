@@ -153,7 +153,7 @@ function Play({
               Résolu en {formatTime(elapsed)}
               {best.record && <span className="muted"> · record perso</span>}
             </div>
-            <Leaderboard level={level} run={run} values={state.values} time={elapsed} />
+            <Leaderboard level={level} run={run} values={state.values} time={elapsed} errors={state.errors} />
           </div>
         ) : state.lost ? (
           <div className="done-panel" role="status">

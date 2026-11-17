@@ -527,6 +527,17 @@ a {
   width: 100%;
 }
 
+/* in lists, errors are a record: no blink */
+.players .errors .used {
+  animation: none;
+}
+
+.line-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .scores .players li.empty {
   justify-content: center;
 }

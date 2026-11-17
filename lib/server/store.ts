@@ -110,6 +110,10 @@ class MemoryStore implements Store {
           for (const f of args) if (e.value.delete(String(f))) n++;
           return n;
         }
+        case 'HGET': {
+          const e = this.live(k);
+          return e && e.value instanceof Map ? (e.value.get(String(args[0])) ?? null) : null;
+        }
         case 'HMGET': {
           const e = this.live(k);
           const h = e && e.value instanceof Map ? e.value : new Map<string, string>();

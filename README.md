@@ -15,7 +15,8 @@ et un trait de pixel art très fin.
 - **Prénom** demandé une seule fois, à la première visite ; gardé sur l'appareil, pré-rempli pour le jeu
   en ligne, modifiable depuis la page classement (les lignes déjà au classement suivent)
 - **Classement** (solo) par niveau : chaque grille terminée y est enregistrée automatiquement ; à la fin,
-  les 5 meilleurs temps (ta ligne soulignée, ta place si tu es plus loin) ; page `/classement` depuis
+  les 5 meilleurs temps avec, pour chacun, les erreurs faites (les trois croix, en rouge celles utilisées)
+  — ta ligne soulignée, ta place si tu es plus loin ; page `/classement` depuis
   l'accueil avec le top 10 de chaque niveau
 - Installable comme web app (manifest + icônes), thème sombre automatique
 

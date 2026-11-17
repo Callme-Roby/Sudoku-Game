@@ -12,6 +12,7 @@
  */
 import { randomUUID } from 'node:crypto';
 import { geometryFor, isLevel, LEVELS, makePuzzle, type Level } from '../sudoku/bank.ts';
+import { MAX_ERRORS } from '../game/state.ts';
 import { isCompleteAndValid } from '../sudoku/solver.ts';
 import { cleanName, HttpError } from './rooms.ts';
 import { store } from './store.ts';
@@ -32,7 +33,29 @@ export interface BoardLine {
   rank: number;
   name: string;
   time: number;
+  /** errors made in the grid that set this time */
+  errors: number;
   me: boolean;
+}
+
+/** what the names hash holds per player and level */
+interface Entry {
+  name: string;
+  errors: number;
+  at: number;
+}
+
+function parseEntry(raw: unknown): Entry {
+  try {
+    const e = JSON.parse(String(raw)) as Partial<Entry>;
+    return {
+      name: typeof e.name === 'string' && e.name ? e.name : 'Joueur',
+      errors: Math.min(MAX_ERRORS, Math.max(0, Math.floor(Number(e.errors) || 0))),
+      at: Number(e.at) || 0,
+    };
+  } catch {
+    return { name: 'Joueur', errors: 0, at: 0 };
+  }
 }
 
 export interface Board {
@@ -71,27 +94,26 @@ export async function getBoard(level: unknown, player: unknown, size: unknown = 
   const outside = me !== null && rank !== null && Number(rank) >= n;
   const ids = [...top.map((l) => l.id), ...(outside ? [me] : [])];
   const [names] = ids.length ? await store().exec([['HMGET', namesKey(level), ...ids]]) : [[]];
-  const nameOf = (i: number) => {
-    const raw = (names as (string | null)[])[i];
-    try {
-      return raw ? (JSON.parse(raw) as { name: string }).name : 'Joueur';
-    } catch {
-      return 'Joueur';
-    }
-  };
+  const entry = (i: number) => parseEntry((names as (string | null)[])[i]);
   return {
     level,
-    top: top.map((l, i) => ({ rank: i + 1, name: nameOf(i), time: l.time, me: l.id === me })),
+    top: top.map((l, i) => {
+      const e = entry(i);
+      return { rank: i + 1, name: e.name, time: l.time, errors: e.errors, me: l.id === me };
+    }),
     mine:
       outside && score !== null
-        ? { rank: Number(rank) + 1, name: nameOf(top.length), time: Number(score), me: true }
+        ? (() => {
+            const e = entry(top.length);
+            return { rank: Number(rank) + 1, name: e.name, time: Number(score), errors: e.errors, me: true };
+          })()
         : null,
     total: Number(total),
   };
 }
 
 export async function submitRun(body: unknown): Promise<Board> {
-  const { run, player, name, values, time } = (body ?? {}) as Record<string, unknown>;
+  const { run, player, name, values, time, errors } = (body ?? {}) as Record<string, unknown>;
   if (typeof run !== 'string' || !/^[0-9a-f-]{36}$/.test(run) || !isPlayerId(player)) {
     throw new HttpError(400, 'Paramètres invalides');
   }
@@ -114,9 +136,25 @@ export async function submitRun(body: unknown): Promise<Board> {
     throw new HttpError(400, 'Temps invalide');
   }
 
+  const mistakes = Number(errors ?? 0);
+  if (!Number.isInteger(mistakes) || mistakes < 0 || mistakes > MAX_ERRORS) {
+    throw new HttpError(400, 'Erreurs invalides');
+  }
+
+  // the errors shown are those of the grid that set the best time
+  const [prevScore, prevRaw] = await store().exec([
+    ['ZSCORE', boardKey(level), player],
+    ['HGET', namesKey(level), player],
+  ]);
+  const improved = prevScore === null || Math.round(time) < Number(prevScore);
+  const entry: Entry = {
+    name: cleanName(name),
+    errors: improved ? mistakes : parseEntry(prevRaw).errors,
+    at: Date.now(),
+  };
   await store().exec([
     ['ZADD', boardKey(level), 'LT', Math.round(time), player],
-    ['HSET', namesKey(level), player, JSON.stringify({ name: cleanName(name), at: Date.now() })],
+    ['HSET', namesKey(level), player, JSON.stringify(entry)],
     ['ZREMRANGEBYRANK', boardKey(level), KEEP, -1],
     ['DEL', runKey(run)], // one submission per grid
   ]);
@@ -128,13 +166,18 @@ export async function renamePlayer(body: unknown) {
   const { player, name } = (body ?? {}) as Record<string, unknown>;
   if (!isPlayerId(player)) throw new HttpError(400, 'Paramètres invalides');
   const clean = cleanName(name);
-  const scores = await store().exec(LEVELS.map((level) => ['ZSCORE', boardKey(level), player]));
-  const cmds = LEVELS.filter((_, i) => scores[i] !== null).map((level) => [
-    'HSET',
-    namesKey(level),
-    player,
-    JSON.stringify({ name: clean, at: Date.now() }),
-  ]);
+  const found = await store().exec(
+    LEVELS.flatMap((level) => [
+      ['ZSCORE', boardKey(level), player],
+      ['HGET', namesKey(level), player],
+    ]),
+  );
+  // keep each line's errors, only the name changes
+  const cmds = LEVELS.flatMap((level, i) =>
+    found[2 * i] === null
+      ? []
+      : [['HSET', namesKey(level), player, JSON.stringify({ ...parseEntry(found[2 * i + 1]), name: clean })]],
+  );
   if (cmds.length) await store().exec(cmds);
   return { name: clean, boards: cmds.length };
 }

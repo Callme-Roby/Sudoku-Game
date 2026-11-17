@@ -5,10 +5,10 @@ import { getBoard, renamePlayer, startRun, submitRun } from '../lib/server/score
 
 const solved = (seed: number) => gridToString(makePuzzle('mini', seed).solution);
 
-async function play(player: string, name: string, seconds: number, seed: number) {
+async function play(player: string, name: string, seconds: number, seed: number, errors = 0) {
   const { run } = await startRun('mini', seed);
   vi.setSystemTime(Date.now() + seconds * 1000);
-  return submitRun({ run, player, name, values: solved(seed), time: seconds * 1000 });
+  return submitRun({ run, player, name, values: solved(seed), time: seconds * 1000, errors });
 }
 
 describe('leaderboard', () => {
@@ -67,5 +67,37 @@ describe('leaderboard names and sizes', () => {
     expect(board.top.find((l) => l.me)?.name).toBe('Mia B');
     expect((await getBoard('mini', null, 1)).top).toHaveLength(1);
     expect((await getBoard('mini', null, 500)).top.length).toBeLessThanOrEqual(20);
+  });
+});
+
+describe('leaderboard errors', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('shows the errors of the grid that set the best time', async () => {
+    vi.useFakeTimers();
+    let board = await play('player-errs', 'Nina', 40, 61, 2);
+    const mine = () => board.top.find((l) => l.me) ?? board.mine;
+    expect(mine()).toMatchObject({ time: 40000, errors: 2 });
+    // slower, cleaner grid: best time and its errors stay
+    board = await play('player-errs', 'Nina', 50, 62, 0);
+    expect(mine()).toMatchObject({ time: 40000, errors: 2 });
+    // faster grid: new time, new errors
+    board = await play('player-errs', 'Nina', 35, 63, 1);
+    expect(mine()).toMatchObject({ time: 35000, errors: 1 });
+    // renaming keeps the errors
+    await renamePlayer({ player: 'player-errs', name: 'Nina R' });
+    const after = await getBoard('mini', 'player-errs', 20);
+    expect(after.top.find((l) => l.me)).toMatchObject({ name: 'Nina R', errors: 1 });
+  });
+
+  it('rejects impossible error counts', async () => {
+    vi.useFakeTimers();
+    for (const errors of [4, -1, 1.5]) {
+      const { run } = await startRun('mini', 70);
+      vi.setSystemTime(Date.now() + 40_000);
+      await expect(
+        submitRun({ run, player: 'player-bad', name: 'x', values: solved(70), time: 40_000, errors }),
+      ).rejects.toThrow(/erreurs/i);
+    }
   });
 });

@@ -8,6 +8,7 @@ import { formatTime, playerId } from '@/lib/game/local';
 import type { Board, BoardLine } from '@/lib/server/scores';
 import type { Level } from '@/lib/sudoku/bank';
 import { gridToString } from '@/lib/sudoku/geometry';
+import { Errors } from './Errors';
 
 type Phase = 'loading' | 'ask' | 'sending' | 'done' | 'offline';
 
@@ -20,11 +21,13 @@ export function Leaderboard({
   run,
   values,
   time,
+  errors,
 }: {
   level: Level;
   run: string | null;
   values: number[];
   time: number;
+  errors: number;
 }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [board, setBoard] = useState<Board | null>(null);
@@ -50,7 +53,7 @@ export function Leaderboard({
         setBoard(
           await api<Board>('/api/scores', {
             method: 'POST',
-            body: { run, player: playerId(), name, values: gridToString(values), time: Math.round(time) },
+            body: { run, player: playerId(), name, values: gridToString(values), time: Math.round(time), errors },
           }),
         );
         setPhase('done');
@@ -59,7 +62,7 @@ export function Leaderboard({
         setPhase((await load()) ? 'done' : 'offline');
       }
     },
-    [run, values, time, load],
+    [run, values, time, errors, load],
   );
 
   useEffect(() => {
@@ -137,7 +140,10 @@ function Line({ line }: { line: BoardLine }) {
         <span className="muted">{line.rank}  </span>
         <span className={line.me ? 'me' : undefined}>{line.name}</span>
       </span>
-      <span className="muted">{formatTime(line.time)}</span>
+      <span className="line-end">
+        <Errors count={line.errors} />
+        <span className="muted">{formatTime(line.time)}</span>
+      </span>
     </li>
   );
 }
