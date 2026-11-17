@@ -6,7 +6,10 @@ et un trait de pixel art très fin.
 - **Solo** : facile · moyen · difficile · extrême (9 × 9) et 6 × 6 (très facile)
 - **Défier un ami** : un lien d'invitation, la même grille, le plus rapide gagne
 - **Battle royale** : jusqu'à 10 joueurs sur la même grille, progression des adversaires en direct
-- Notes (crayon), annuler, effacer, conflits signalés par une trame, chiffres terminés estompés
+- Notes (crayon), annuler, effacer, chiffres terminés estompés
+- **Erreurs** : un chiffre placé en doublon (ligne, colonne ou carré) s'affiche en rouge léger sur une trame
+  et compte une erreur (les trois croix à côté du chrono) ; annuler ne la rend pas. À la 4e, la partie est
+  perdue — en multijoueur, le joueur est éliminé
 - Clavier : `1`–`9`, flèches, `⌫`, `N` (notes), `Ctrl/⌘ + Z`
 - Partie solo sauvegardée automatiquement (recharger la page reprend la grille), record par niveau
 - **Prénom** demandé une seule fois, à la première visite ; gardé sur l'appareil, pré-rempli pour le jeu

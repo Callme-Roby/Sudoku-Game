@@ -43,6 +43,8 @@ interface PlayerRec {
   progress: number;
   finishedMs: number | null;
   gaveUp: boolean;
+  /** out of the race after too many errors (counts as giving up) */
+  eliminated?: boolean;
 }
 
 export interface PublicPlayer {
@@ -52,6 +54,7 @@ export interface PublicPlayer {
   progress: number;
   finishedMs: number | null;
   gaveUp: boolean;
+  eliminated: boolean;
 }
 
 export interface PublicRoom {
@@ -160,6 +163,7 @@ function view(meta: RoomMeta, players: PlayerRec[], now: number): PublicRoom {
         progress: current ? p.progress : 0,
         finishedMs: current ? p.finishedMs : null,
         gaveUp: current ? p.gaveUp : false,
+        eliminated: current ? Boolean(p.eliminated) : false,
       };
     }),
   };
@@ -278,7 +282,12 @@ export async function reportProgress(code: string, auth: string | null, body: un
   const { meta, players } = await load(code);
   const now = Date.now();
   const me = authenticate(players, auth);
-  const { round, values, giveUp } = (body ?? {}) as { round?: number; values?: string; giveUp?: boolean };
+  const { round, values, giveUp, eliminated } = (body ?? {}) as {
+    round?: number;
+    values?: string;
+    giveUp?: boolean;
+    eliminated?: boolean;
+  };
   if (meta.status !== 'playing' || meta.startAt === null || round !== meta.round) {
     throw new HttpError(409, 'Manche terminée');
   }
@@ -288,11 +297,13 @@ export async function reportProgress(code: string, auth: string | null, body: un
     me.progress = 0;
     me.finishedMs = null;
     me.gaveUp = false;
+    me.eliminated = false;
   }
   me.seenAt = now;
   if (me.finishedMs === null && !me.gaveUp) {
-    if (giveUp) {
+    if (giveUp || eliminated) {
       me.gaveUp = true;
+      me.eliminated = Boolean(eliminated);
     } else {
       const puzzle = makePuzzle(meta.level, meta.seed);
       const g = geometryFor(meta.level);

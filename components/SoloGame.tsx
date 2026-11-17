@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { bestKey, formatTime, readJSON, SOLO_KEY, writeJSON, type SavedSolo } from '@/lib/game/local';
+import { MAX_ERRORS } from '@/lib/game/state';
 import { api } from '@/lib/game/api';
 import { ICONS } from '@/lib/pixel/glyphs';
 import { geometryFor, LEVEL_LABEL, makePuzzle, type Level } from '@/lib/sudoku/bank';
 import { randomSeed } from '@/lib/sudoku/rng';
 import { Board } from './Board';
+import { Errors } from './Errors';
 import { Leaderboard } from './Leaderboard';
 import { Actions, DigitPad } from './Pad';
 import { Pixel } from './Pixel';
@@ -59,24 +61,25 @@ function Play({
   const [best, setBest] = useState<{ time: number | null; record: boolean }>({ time: null, record: false });
   const elapsedRef = useRef(elapsed);
   elapsedRef.current = elapsed;
-  useKeyboard(dispatch, g.n, !state.won);
+  const over = state.won || state.lost;
+  useKeyboard(dispatch, g.n, !over);
 
   // leaderboard: the server notes when this grid started
   const [run, setRun] = useState<string | null>(saved?.run ?? null);
   const asked = useRef(false);
   useEffect(() => {
-    if (run || state.won || asked.current) return;
+    if (run || over || asked.current) return;
     asked.current = true;
     api<{ run: string }>('/api/scores/start', { method: 'POST', body: { level, seed } })
       .then((r) => setRun(r.run))
       .catch(() => {
         /* offline: the grid still plays, just without leaderboard */
       });
-  }, [run, state.won, level, seed]);
+  }, [run, over, level, seed]);
 
   // timer — only runs while the page is visible
   useEffect(() => {
-    if (state.won) return;
+    if (over) return;
     let last = performance.now();
     const id = window.setInterval(() => {
       const now = performance.now();
@@ -85,7 +88,7 @@ function Play({
       if (document.visibilityState === 'visible') setElapsed((e) => e + dt);
     }, 250);
     return () => window.clearInterval(id);
-  }, [state.won]);
+  }, [over]);
 
   // persistence
   const save = useCallback(() => {
@@ -96,9 +99,11 @@ function Play({
       notes: state.notes,
       elapsed: elapsedRef.current,
       won: state.won,
+      errors: state.errors,
+      lost: state.lost,
       run,
     } satisfies SavedSolo);
-  }, [level, seed, state.values, state.notes, state.won, run]);
+  }, [level, seed, state.values, state.notes, state.won, state.errors, state.lost, run]);
   useEffect(save, [save]);
   useEffect(() => {
     const id = window.setInterval(save, 3000);
@@ -133,8 +138,11 @@ function Play({
           <Pixel rows={ICONS.back} />
         </Link>
         <span>{LEVEL_LABEL[level]}</span>
-        <span className="timer" aria-label="temps">
-          {formatTime(elapsed)}
+        <span className="bar-right">
+          <Errors count={state.errors} />
+          <span className="timer" aria-label="temps">
+            {formatTime(elapsed)}
+          </span>
         </span>
       </header>
       <section className="play">
@@ -147,12 +155,19 @@ function Play({
             </div>
             <Leaderboard level={level} run={run} values={state.values} time={elapsed} />
           </div>
+        ) : state.lost ? (
+          <div className="done-panel" role="status">
+            <div className="lost-title">Partie perdue</div>
+            <div className="muted">
+              {MAX_ERRORS + 1} erreurs · {formatTime(elapsed)}
+            </div>
+          </div>
         ) : (
           <DigitPad n={g.n} state={state} dispatch={dispatch} />
         )}
       </section>
       <footer className="foot">
-        {state.won ? (
+        {over ? (
           <div className="row">
             <button type="button" className="item" onClick={onNew}>
               Nouvelle grille

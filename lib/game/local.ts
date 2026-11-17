@@ -36,6 +36,8 @@ export interface SavedSolo {
   notes: number[];
   elapsed: number;
   won: boolean;
+  errors?: number;
+  lost?: boolean;
   /** leaderboard run id from /api/scores/start */
   run?: string | null;
 }

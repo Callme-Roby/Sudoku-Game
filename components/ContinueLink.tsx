@@ -11,7 +11,7 @@ export function ContinueLink() {
   useEffect(() => {
     const s = readJSON<SavedSolo>(SOLO_KEY);
     const touched = s && s.elapsed > 5000;
-    if (s && touched && !s.won && isLevel(s.level)) setSaved(s);
+    if (s && touched && !s.won && !s.lost && isLevel(s.level)) setSaved(s);
   }, []);
   if (!saved) return null;
   return (

@@ -5,12 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { api, ApiError } from '@/lib/game/api';
 import { getName, saveName } from '@/lib/game/identity';
 import { formatTime, readJSON, roomKey, writeJSON, type RoomCreds } from '@/lib/game/local';
-import type { Action, Snapshot } from '@/lib/game/state';
+import { MAX_ERRORS, type Action, type Snapshot } from '@/lib/game/state';
 import { DIGITS, ICONS } from '@/lib/pixel/glyphs';
 import type { PublicPlayer, PublicRoom } from '@/lib/server/rooms';
 import { geometryFor, LEVEL_LABEL, makePuzzle } from '@/lib/sudoku/bank';
 import { gridToString } from '@/lib/sudoku/geometry';
 import { Board } from './Board';
+import { Errors } from './Errors';
 import { MODE_LABEL } from './CreateRoom';
 import { ActionButton, Actions, DigitPad } from './Pad';
 import { Pixel } from './Pixel';
@@ -272,7 +273,7 @@ function Race({
   const started = now >= startAt;
   const meP = room.players.find((p) => p.id === creds.id)!;
   const confirmed = meP.finishedMs !== null || meP.gaveUp;
-  const done = confirmed || state.won;
+  const done = confirmed || state.won || state.lost;
   const [localFinish, setLocalFinish] = useState<number | null>(null);
 
   const dispatch = useCallback(
@@ -304,11 +305,17 @@ function Race({
   // progress, debounced; local save for reloads
   useEffect(() => {
     if (!started || confirmed) return;
-    writeJSON(saveKey, { values: state.values, notes: state.notes, won: state.won });
-    if (state.won) return;
+    writeJSON(saveKey, {
+      values: state.values,
+      notes: state.notes,
+      won: state.won,
+      errors: state.errors,
+      lost: state.lost,
+    });
+    if (state.won || state.lost) return;
     const t = window.setTimeout(() => send({ values: gridToString(state.values) }), 400);
     return () => window.clearTimeout(t);
-  }, [state.values, state.notes, state.won, started, confirmed, saveKey, send]);
+  }, [state.values, state.notes, state.won, state.errors, state.lost, started, confirmed, saveKey, send]);
 
   // finished: send right away, and keep trying until the server confirms
   useEffect(() => {
@@ -319,6 +326,16 @@ function Race({
     const id = window.setInterval(go, 2000);
     return () => window.clearInterval(id);
   }, [state.won, confirmed, state.values, send, offset, startAt]);
+
+  // fourth error: out of the race
+  useEffect(() => {
+    if (!state.lost || confirmed) return;
+    setLocalFinish((f) => f ?? Date.now() + offset.current - startAt);
+    const go = () => send({ eliminated: true });
+    go();
+    const id = window.setInterval(go, 2000);
+    return () => window.clearInterval(id);
+  }, [state.lost, confirmed, send, offset, startAt]);
 
   const elapsed = meP.finishedMs ?? localFinish ?? (started ? now - startAt : 0);
   const countdown = Math.min(3, Math.max(1, Math.ceil((startAt - now) / 1000)));
@@ -339,7 +356,15 @@ function Race({
 
   return (
     <main className="screen game" style={{ '--board-w': `${boardW}px` } as CSSProperties}>
-      <Header room={room} right={<span className="timer">{formatTime(elapsed)}</span>} />
+      <Header
+        room={room}
+        right={
+          <span className="bar-right">
+            <Errors count={state.errors} />
+            <span className="timer">{formatTime(elapsed)}</span>
+          </span>
+        }
+      />
       <section className="play">
         {!done && others.length > 0 && (
           <ul className="racers" style={{ '--cols': twoCols ? 2 : 1 } as CSSProperties} aria-label="adversaires">
@@ -347,7 +372,15 @@ function Race({
               <li key={p.id} className="racer">
                 <span className="name">{p.name}</span>
                 <span className="muted">
-                  {p.finishedMs !== null ? formatTime(p.finishedMs) : p.gaveUp ? 'Abandon' : !p.active ? 'Parti' : ''}
+                  {p.finishedMs !== null
+                    ? formatTime(p.finishedMs)
+                    : p.eliminated
+                      ? 'Éliminé'
+                      : p.gaveUp
+                        ? 'Abandon'
+                        : !p.active
+                          ? 'Parti'
+                          : ''}
                 </span>
                 <span className="track">
                   <i style={{ width: `${Math.round((p.finishedMs !== null ? 1 : p.progress) * 100)}%` }} />
@@ -366,15 +399,21 @@ function Race({
         </div>
         {done ? (
           <div className="done-panel" role="status">
-            <div>
-              {meP.gaveUp
+            <div className={meP.eliminated || state.lost ? 'lost-title' : undefined}>
+              {meP.eliminated || state.lost
+                ? 'Éliminé'
+                : meP.gaveUp
                 ? 'Abandon'
                 : myRank === 1
                   ? 'Victoire'
                   : myRank > 1
                     ? `${ordinal(myRank)} sur ${ranked.length}`
                     : 'Terminé'}
-              {!meP.gaveUp && <span className="muted"> · {formatTime(elapsed)}</span>}
+              {meP.eliminated || state.lost ? (
+                <span className="muted"> · {MAX_ERRORS + 1} erreurs</span>
+              ) : (
+                !meP.gaveUp && <span className="muted"> · {formatTime(elapsed)}</span>
+              )}
             </div>
             <ol className="players" style={{ maxWidth: 320 }}>
               {ranked.map((p, k) => (
@@ -390,7 +429,9 @@ function Race({
                   <span className="muted">
                     {p.finishedMs !== null
                       ? formatTime(p.finishedMs)
-                      : p.gaveUp
+                      : p.eliminated
+                        ? 'Éliminé'
+                        : p.gaveUp
                         ? 'Abandon'
                         : !p.active
                           ? 'Parti'

@@ -116,6 +116,48 @@ describe('game reducer', () => {
     expect(progress(s.values, p.givens, p.solution)).toBe(1);
   });
 
+  it('counts digits placed in conflict, and loses on the 4th', () => {
+    let s = initialState(p.givens);
+    const given = p.givens.findIndex((v) => v);
+    // empty peers of that given: placing its digit there is a conflict
+    const targets = g.peers[given].filter((i) => !p.givens[i]);
+    const clash = p.givens[given];
+    s = reduce(s, { type: 'select', index: targets[0] });
+    s = reduce(s, { type: 'input', digit: clash });
+    expect(s.errors).toBe(1);
+    // taking the digit back (same key, or undo) does not refund the error
+    s = reduce(s, { type: 'input', digit: clash });
+    expect(s.values[targets[0]]).toBe(0);
+    expect(s.errors).toBe(1);
+    // notes never count
+    s = reduce(s, { type: 'toggleNotes' });
+    s = reduce(s, { type: 'input', digit: clash });
+    s = reduce(s, { type: 'toggleNotes' });
+    expect(s.errors).toBe(1);
+    for (let k = 0; k < 3; k++) {
+      s = reduce(s, { type: 'select', index: targets[k % targets.length] });
+      s = reduce(s, { type: 'erase' });
+      s = reduce(s, { type: 'input', digit: clash });
+      s = reduce(s, { type: 'undo' });
+    }
+    expect(s.errors).toBe(4);
+    expect(s.lost).toBe(true);
+    expect(s.selected).toBeNull();
+    // the game is over: nothing changes any more
+    const frozen = reduce(reduce(s, { type: 'select', index: targets[1] }), { type: 'input', digit: 1 });
+    expect(frozen.values).toEqual(s.values);
+  });
+
+  it('a correct digit is never an error', () => {
+    let s = initialState(p.givens);
+    p.givens.forEach((v, i) => {
+      if (v) return;
+      s = reduce(s, { type: 'select', index: i });
+      s = reduce(s, { type: 'input', digit: p.solution[i] });
+    });
+    expect(s).toMatchObject({ won: true, errors: 0, lost: false });
+  });
+
   it('flags conflicts', () => {
     const values = new Array(81).fill(0);
     values[0] = 5;

@@ -22,6 +22,7 @@
   --zone: #e5e2db; /* row / column / box of the selection */
   --same: #d8d5cd; /* same digit as the selection */
   --sel: #c9c6bd; /* selected cell */
+  --err: #d06a5e; /* light red: digits in conflict, errors used */
   --u: 2px; /* size of one "pixel" */
   color-scheme: light;
 }
@@ -36,6 +37,7 @@
     --zone: #252523;
     --same: #2f2e2b;
     --sel: #3b3a36;
+    --err: #e08a7e;
     color-scheme: dark;
   }
 }
@@ -322,6 +324,44 @@ a {
 
 .cell .px {
   position: relative;
+}
+
+/* a digit the player placed in conflict: light red, on top of the dither */
+.cell.bad {
+  color: var(--err);
+}
+
+/* errors left, next to the timer */
+.bar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.errors {
+  display: inline-flex;
+  gap: 4px;
+  color: var(--line);
+}
+
+.errors .used {
+  color: var(--err);
+  animation: err-blink 480ms steps(1) 1;
+}
+
+@keyframes err-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  25%,
+  75% {
+    opacity: 0;
+  }
+}
+
+.lost-title {
+  color: var(--err);
 }
 
 .notes {

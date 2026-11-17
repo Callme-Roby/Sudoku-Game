@@ -180,6 +180,8 @@ export const ICONS = {
     '#...#.....',
     '####......',
   ],
+  /** one error used (header) */
+  cross: ['#...#', '.#.#.', '..#..', '.#.#.', '#...#'],
   /** white flag — give up */
   flag: [
     '#........',

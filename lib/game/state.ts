@@ -13,7 +13,14 @@ export interface GameState extends Snapshot {
   notesMode: boolean;
   history: Snapshot[];
   won: boolean;
+  /** digits placed in conflict with another one (same row, column or box) */
+  errors: number;
+  /** more than MAX_ERRORS errors: the game is over */
+  lost: boolean;
 }
+
+/** Errors allowed in a game; the next one loses it. */
+export const MAX_ERRORS = 3;
 
 export type Action =
   | { type: 'select'; index: number | null }
@@ -26,7 +33,10 @@ export type Action =
 
 const HISTORY_LIMIT = 200;
 
-export function initialState(givens: number[], saved?: Partial<Snapshot> & { won?: boolean }): GameState {
+export function initialState(
+  givens: number[],
+  saved?: Partial<Snapshot> & { won?: boolean; errors?: number; lost?: boolean },
+): GameState {
   const values = saved?.values?.length === givens.length ? saved.values.slice() : givens.slice();
   // givens always win over saved values
   givens.forEach((v, i) => {
@@ -41,6 +51,8 @@ export function initialState(givens: number[], saved?: Partial<Snapshot> & { won
     notesMode: false,
     history: [],
     won: Boolean(saved?.won),
+    errors: Math.max(0, Math.floor(Number(saved?.errors) || 0)),
+    lost: Boolean(saved?.lost),
   };
 }
 
@@ -66,13 +78,14 @@ export function createReducer(g: Geometry) {
       case 'toggleNotes':
         return { ...s, notesMode: !s.notesMode };
       case 'undo': {
-        if (s.won || !s.history.length) return s;
+        // undo removes the digit, not the error: the counter never goes down
+        if (s.won || s.lost || !s.history.length) return s;
         const prev = s.history[s.history.length - 1];
         return { ...s, ...prev, history: s.history.slice(0, -1) };
       }
       case 'erase': {
         const i = s.selected;
-        if (s.won || i === null || s.givens[i]) return s;
+        if (s.won || s.lost || i === null || s.givens[i]) return s;
         if (!s.values[i] && !s.notes[i]) return s;
         const values = s.values.slice();
         const notes = s.notes.slice();
@@ -83,7 +96,7 @@ export function createReducer(g: Geometry) {
       case 'input': {
         const i = s.selected;
         const d = a.digit;
-        if (s.won || i === null || s.givens[i] || d < 1 || d > g.n) return s;
+        if (s.won || s.lost || i === null || s.givens[i] || d < 1 || d > g.n) return s;
         if (s.notesMode) {
           if (s.values[i]) return s;
           const notes = s.notes.slice();
@@ -101,7 +114,19 @@ export function createReducer(g: Geometry) {
           for (const p of g.peers[i]) notes[p] &= ~bit(d);
         }
         const won = isCompleteAndValid(values, g);
-        return { ...s, values, notes, won, selected: won ? null : s.selected, history: withHistory(s) };
+        const clash = values[i] === d && g.peers[i].some((p) => values[p] === d);
+        const errors = s.errors + (clash ? 1 : 0);
+        const lost = !won && errors > MAX_ERRORS;
+        return {
+          ...s,
+          values,
+          notes,
+          won,
+          errors,
+          lost,
+          selected: won || lost ? null : s.selected,
+          history: withHistory(s),
+        };
       }
     }
   };
