@@ -16,13 +16,15 @@
 :root {
   --paper: #efede7;
   --ink: #1f1e1c;
-  --soft: #5f5d58; /* digits typed by the player */
-  --muted: #9a978f;
-  --line: #d3d0c8; /* thin cell lines */
-  --zone: #e5e2db; /* row / column / box of the selection */
-  --same: #d8d5cd; /* same digit as the selection */
-  --sel: #c9c6bd; /* selected cell */
-  --err: #d06a5e; /* light red: digits in conflict, errors used */
+  /* contrast with --paper (WCAG ratio) noted for each */
+  --soft: #504e4c; /* digits typed by the player — 7.0 */
+  --muted: #6d6b68; /* notes, labels — 4.5 */
+  --line: #b9b7b3; /* thin cell lines — 1.7 */
+  --zone: #dbd9d4; /* row / column / box of the selection — 1.2 */
+  --same: #cac8c3; /* same digit as the selection — 1.4 */
+  --sel: #b7b5b0; /* selected cell — 1.75 */
+  --spare: #a3a19d; /* error crosses not used yet — 2.2 */
+  --err: #b4594f; /* red: digits in conflict, errors used — 4.0 */
   --u: 2px; /* size of one "pixel" */
   color-scheme: light;
 }
@@ -31,12 +33,13 @@
   :root {
     --paper: #1b1b1a;
     --ink: #e9e7e1;
-    --soft: #aeaba3;
-    --muted: #6d6b66;
-    --line: #34332f;
-    --zone: #252523;
-    --same: #2f2e2b;
-    --sel: #3b3a36;
+    --soft: #b4b2ad;
+    --muted: #84837f;
+    --line: #424240;
+    --zone: #2b2a29;
+    --same: #363634;
+    --sel: #444442;
+    --spare: #525250;
     --err: #e08a7e;
     color-scheme: dark;
   }
@@ -341,7 +344,7 @@ a {
 .errors {
   display: inline-flex;
   gap: 4px;
-  color: var(--line);
+  color: var(--spare);
 }
 
 .errors .used {
