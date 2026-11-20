@@ -29,6 +29,8 @@ export interface RoomMeta {
   round: number;
   status: 'lobby' | 'playing';
   startAt: number | null;
+  /** duel only: the round stopped for everyone (first finish, give-up or elimination) */
+  endedAt?: number | null;
   hostId: string;
   createdAt: number;
 }
@@ -45,6 +47,8 @@ interface PlayerRec {
   gaveUp: boolean;
   /** out of the race after too many errors (counts as giving up) */
   eliminated?: boolean;
+  /** time played when giving up / being eliminated */
+  stoppedMs?: number | null;
 }
 
 export interface PublicPlayer {
@@ -55,6 +59,8 @@ export interface PublicPlayer {
   finishedMs: number | null;
   gaveUp: boolean;
   eliminated: boolean;
+  /** time played: finish time, time when stopping, or the duel's end */
+  timeMs: number | null;
 }
 
 export interface PublicRoom {
@@ -65,6 +71,7 @@ export interface PublicRoom {
   round: number;
   status: RoomMeta['status'];
   startAt: number | null;
+  endedAt: number | null;
   hostId: string;
   max: number;
   now: number;
@@ -151,11 +158,13 @@ function view(meta: RoomMeta, players: PlayerRec[], now: number): PublicRoom {
     round: meta.round,
     status: meta.status,
     startAt: meta.startAt,
+    endedAt: meta.endedAt ?? null,
     hostId: effectiveHost(meta, players, now),
     max: MAX_PLAYERS[meta.mode],
     now,
     players: players.map((p) => {
       const current = p.round === meta.round;
+      const ended = meta.endedAt != null && meta.startAt !== null ? meta.endedAt - meta.startAt : null;
       return {
         id: p.id,
         name: p.name,
@@ -164,6 +173,7 @@ function view(meta: RoomMeta, players: PlayerRec[], now: number): PublicRoom {
         finishedMs: current ? p.finishedMs : null,
         gaveUp: current ? p.gaveUp : false,
         eliminated: current ? Boolean(p.eliminated) : false,
+        timeMs: current ? (p.finishedMs ?? p.stoppedMs ?? ended) : ended,
       };
     }),
   };
@@ -243,6 +253,7 @@ async function launch(meta: RoomMeta, players: PlayerRec[], now: number, newRoun
     ...meta,
     status: 'playing',
     startAt: now + COUNTDOWN_MS,
+    endedAt: null,
     round: newRound ? meta.round + 1 : meta.round,
     seed: newRound ? newSeed() : meta.seed,
   };
@@ -273,7 +284,8 @@ export async function rematch(code: string, auth: string | null) {
   if (effectiveHost(meta, players, now) !== me.id) throw new HttpError(403, "Seul l'hôte peut relancer");
   if (meta.status !== 'playing') throw new HttpError(409, 'Pas de partie en cours');
   const current = players.filter((p) => isActive(p, now));
-  const over = current.every((p) => p.round === meta.round && (p.finishedMs !== null || p.gaveUp));
+  const over =
+    meta.endedAt != null || current.every((p) => p.round === meta.round && (p.finishedMs !== null || p.gaveUp));
   if (!over) throw new HttpError(409, 'La manche n’est pas finie');
   return launch(meta, players, now, true);
 }
@@ -292,18 +304,22 @@ export async function reportProgress(code: string, auth: string | null, body: un
     throw new HttpError(409, 'Manche terminée');
   }
   if (now < meta.startAt) throw new HttpError(409, 'Pas encore');
+  // duel already decided: progress is frozen as it was at that moment
+  if (meta.endedAt != null) return view(meta, players, now);
   if (me.round !== meta.round) {
     me.round = meta.round;
     me.progress = 0;
     me.finishedMs = null;
     me.gaveUp = false;
     me.eliminated = false;
+    me.stoppedMs = null;
   }
   me.seenAt = now;
   if (me.finishedMs === null && !me.gaveUp) {
     if (giveUp || eliminated) {
       me.gaveUp = true;
       me.eliminated = Boolean(eliminated);
+      me.stoppedMs = now - meta.startAt;
     } else {
       const puzzle = makePuzzle(meta.level, meta.seed);
       const g = geometryFor(meta.level);
@@ -319,9 +335,16 @@ export async function reportProgress(code: string, auth: string | null, body: un
       }
     }
   }
-  await store().exec([savePlayer(code, me)]);
+  const cmds: (string | number)[][] = [savePlayer(code, me)];
+  // one against one: the first to finish (or to drop out) stops the round for both
+  let next = meta;
+  if (meta.mode === 'duel' && (me.finishedMs !== null || me.gaveUp)) {
+    next = { ...meta, endedAt: now };
+    cmds.push(saveMeta(next));
+  }
+  await store().exec(cmds);
   return view(
-    meta,
+    next,
     players.map((p) => (p.id === me.id ? me : p)),
     now,
   );

@@ -273,7 +273,9 @@ function Race({
   const started = now >= startAt;
   const meP = room.players.find((p) => p.id === creds.id)!;
   const confirmed = meP.finishedMs !== null || meP.gaveUp;
-  const done = confirmed || state.won || state.lost;
+  // duel decided (first finish or drop-out): everyone stops
+  const ended = room.endedAt !== null;
+  const done = confirmed || state.won || state.lost || ended;
   const [localFinish, setLocalFinish] = useState<number | null>(null);
 
   const dispatch = useCallback(
@@ -283,6 +285,10 @@ function Race({
     [started, done, rawDispatch],
   );
   useKeyboard(dispatch, g.n, started && !done);
+  // stopped by the other player: clear the selection highlight
+  useEffect(() => {
+    if (ended) rawDispatch({ type: 'select', index: null });
+  }, [ended, rawDispatch]);
 
   const others = room.players.filter((p) => p.id !== creds.id && (p.active || p.finishedMs !== null));
   const twoCols = others.length > 2;
@@ -304,7 +310,7 @@ function Race({
 
   // progress, debounced; local save for reloads
   useEffect(() => {
-    if (!started || confirmed) return;
+    if (!started || confirmed || ended) return;
     writeJSON(saveKey, {
       values: state.values,
       notes: state.notes,
@@ -315,35 +321,35 @@ function Race({
     if (state.won || state.lost) return;
     const t = window.setTimeout(() => send({ values: gridToString(state.values) }), 400);
     return () => window.clearTimeout(t);
-  }, [state.values, state.notes, state.won, state.errors, state.lost, started, confirmed, saveKey, send]);
+  }, [state.values, state.notes, state.won, state.errors, state.lost, started, confirmed, ended, saveKey, send]);
 
   // finished: send right away, and keep trying until the server confirms
   useEffect(() => {
-    if (!state.won || confirmed) return;
+    if (!state.won || confirmed || ended) return;
     setLocalFinish((f) => f ?? Date.now() + offset.current - startAt);
     const go = () => send({ values: gridToString(state.values) });
     go();
     const id = window.setInterval(go, 2000);
     return () => window.clearInterval(id);
-  }, [state.won, confirmed, state.values, send, offset, startAt]);
+  }, [state.won, confirmed, ended, state.values, send, offset, startAt]);
 
   // fourth error: out of the race
   useEffect(() => {
-    if (!state.lost || confirmed) return;
+    if (!state.lost || confirmed || ended) return;
     setLocalFinish((f) => f ?? Date.now() + offset.current - startAt);
     const go = () => send({ eliminated: true });
     go();
     const id = window.setInterval(go, 2000);
     return () => window.clearInterval(id);
-  }, [state.lost, confirmed, send, offset, startAt]);
+  }, [state.lost, confirmed, ended, send, offset, startAt]);
 
-  const elapsed = meP.finishedMs ?? localFinish ?? (started ? now - startAt : 0);
+  const elapsed = meP.finishedMs ?? meP.timeMs ?? localFinish ?? (started ? now - startAt : 0);
   const countdown = Math.min(3, Math.max(1, Math.ceil((startAt - now) / 1000)));
 
   const ranked = standings(room.players.filter((p) => p.active || p.finishedMs !== null || p.id === creds.id));
   const finishers = ranked.filter((p) => p.finishedMs !== null);
   const myRank = finishers.findIndex((p) => p.id === creds.id) + 1;
-  const allDone = room.players.filter((p) => p.active).every((p) => p.finishedMs !== null || p.gaveUp);
+  const allDone = ended || room.players.filter((p) => p.active).every((p) => p.finishedMs !== null || p.gaveUp);
   const isHost = room.hostId === creds.id;
 
   const rematch = async () => {
@@ -397,7 +403,9 @@ function Race({
             </div>
           )}
         </div>
-        {done ? (
+        {done && room.mode === 'duel' ? (
+          <DuelResult room={room} me={meP} lost={state.lost} />
+        ) : done ? (
           <div className="done-panel" role="status">
             <div className={meP.eliminated || state.lost ? 'lost-title' : undefined}>
               {meP.eliminated || state.lost
@@ -487,5 +495,45 @@ function GiveUp({ disabled, onConfirm }: { disabled: boolean; onConfirm: () => v
       disabled={disabled}
       onClick={() => (armed ? onConfirm() : setArmed(true))}
     />
+  );
+}
+
+/** One against one: who won, then each player's progress and time played. */
+function DuelResult({ room, me, lost }: { room: PublicRoom; me: PublicPlayer; lost: boolean }) {
+  const players = room.players.filter((p) => p.active || p.finishedMs !== null || p.gaveUp || p.id === me.id);
+  const firstFinish = players
+    .filter((p) => p.finishedMs !== null)
+    .sort((a, b) => (a.finishedMs ?? 0) - (b.finishedMs ?? 0))[0];
+  // nobody finished but someone dropped out: the other one wins
+  const winner = firstFinish ?? (room.endedAt !== null ? players.find((p) => !p.gaveUp) : undefined);
+  const title =
+    me.eliminated || lost
+      ? 'Éliminé'
+      : me.gaveUp
+        ? 'Abandon'
+        : !winner
+          ? 'Terminé'
+          : winner.id === me.id
+            ? 'Victoire'
+            : 'Défaite';
+  const order = [...players].sort((a, b) =>
+    a.id === winner?.id ? -1 : b.id === winner?.id ? 1 : b.progress - a.progress,
+  );
+  const pct = (p: PublicPlayer) => `${p.finishedMs !== null ? 100 : Math.floor(p.progress * 100)} %`;
+  return (
+    <div className="done-panel" role="status">
+      <div className={title === 'Éliminé' ? 'lost-title' : undefined}>{title}</div>
+      <ol className="players" style={{ maxWidth: 320 }}>
+        {order.map((p) => (
+          <li key={p.id}>
+            <span className={p.id === me.id ? 'me' : undefined}>{p.name}</span>
+            <span className="muted">
+              {p.eliminated ? 'Éliminé · ' : p.gaveUp ? 'Abandon · ' : ''}
+              {pct(p)} · {p.timeMs !== null ? formatTime(p.timeMs) : '…'}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }

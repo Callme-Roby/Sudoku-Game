@@ -4,7 +4,8 @@ Un sudoku classique et épuré : une grille, du blanc cassé, un noir doux, des 
 et un trait de pixel art très fin.
 
 - **Solo** : facile · moyen · difficile · extrême (9 × 9) et 6 × 6 (très facile)
-- **Défier un ami** : un lien d'invitation, la même grille, le plus rapide gagne
+- **Défier un ami** : un lien d'invitation, la même grille ; dès que l'un termine (ou abandonne, ou est
+  éliminé), la partie s'arrête pour les deux, avec le pourcentage rempli et le temps de chacun
 - **Battle royale** : jusqu'à 10 joueurs sur la même grille, progression des adversaires en direct
 - Notes (crayon), annuler, effacer, chiffres terminés estompés
 - **Erreurs** : un chiffre placé en doublon (ligne, colonne ou carré) s'affiche en rouge léger sur une trame
